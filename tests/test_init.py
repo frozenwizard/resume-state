@@ -1,6 +1,6 @@
 """Tests for the Resume State component."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -11,8 +11,8 @@ from custom_components.resume_state.const import DOMAIN, SERVICE_HELLO_WORLD
 @pytest.mark.asyncio
 async def test_async_setup_registers_service() -> None:
     """Test that the hello_world service is registered during setup."""
-    hass = AsyncMock()
-    hass.services = AsyncMock()
+    hass = MagicMock()
+    hass.services = MagicMock()
 
     # Run setup
     result = await async_setup(hass, {})
@@ -29,8 +29,8 @@ async def test_async_setup_registers_service() -> None:
 @pytest.mark.asyncio
 async def test_hello_world_service_logs_hello_world() -> None:
     """Test that the hello_world service handler logs 'Hello World'."""
-    hass = AsyncMock()
-    hass.services = AsyncMock()
+    hass = MagicMock()
+    hass.services = MagicMock()
 
     with patch("custom_components.resume_state._LOGGER") as mock_logger:
         await async_setup(hass, {})
@@ -40,7 +40,7 @@ async def test_hello_world_service_logs_hello_world() -> None:
         handler = args[2]
 
         # Call the handler
-        await handler(AsyncMock())
+        await handler(MagicMock())
 
         # Verify it logged "Hello World"
         mock_logger.info.assert_called_once_with("Hello World")
