@@ -11,7 +11,8 @@ on:
     branches:
       - main
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   hassfest: # https://developers.home-assistant.io/blog/2020/04/16/hassfest
@@ -23,15 +24,3 @@ jobs:
 
       - name: Run hassfest validation
         uses: home-assistant/actions/hassfest@d56d093b9ab8d2105bc0cb6ee9bcc0ef4ec8b96d # master
-
-  hacs: # https://github.com/hacs/action
-    name: HACS validation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run HACS validation
-        uses: hacs/action@d556e736723344f83838d08488c983a15381059a # 22.5.0
-        with:
-          category: integration
-          # Remove this 'ignore' key when you have added brand images for your integration
-          # https://developers.home-assistant.io/docs/creating_integration_file_structure#local-brand-images-for-custom-integrations
-          ignore: brands

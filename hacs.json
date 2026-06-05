@@ -1,5 +1,4 @@
 {
-    "name": "Integration blueprint",
-    "homeassistant": "2026.3.2",
-    "hacs": "2.0.5"
+    "name": "Resume State",
+    "homeassistant": "2026.6.0"
 }
