@@ -5,8 +5,8 @@
     "@frozenwizard"
   ],
   "config_flow": false,
-  "documentation": "https://github.com/frozenwizard/resume_state",
+  "documentation": "https://github.com/frozenwizard/resume-state",
   "iot_class": "assumed_state",
-  "issue_tracker": "https://github.com/frozenwizard/resume_state/issues",
+  "issue_tracker": "https://github.com/frozenwizard/resume-state/issues",
   "version": "0.0.1"
 }
