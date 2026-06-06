@@ -15,6 +15,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool:
     """Set up the Resume State component."""
     conf = _config.get(DOMAIN)

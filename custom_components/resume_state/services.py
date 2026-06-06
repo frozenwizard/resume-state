@@ -11,6 +11,7 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_hello_world(_call: ServiceCall) -> None:
     """Handle the hello_world service call."""
     _LOGGER.info("Hello World")
