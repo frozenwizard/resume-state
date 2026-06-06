@@ -24,7 +24,7 @@ jobs:
         with:
           config: .markdownlint.yaml
           fix: false
-          glob: '**/*.md'
+          globs: '**/*.md'
 
   ruff:
     name: "Ruff"
