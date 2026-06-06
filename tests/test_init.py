@@ -15,7 +15,7 @@ async def test_async_setup_registers_service() -> None:
     hass.services = MagicMock()
 
     # Run setup
-    result = await async_setup(hass, {})
+    result = await async_setup(hass, {DOMAIN: {}})
 
     assert result is True
     # Check if async_register was called with correct arguments
