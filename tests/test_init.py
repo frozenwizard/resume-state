@@ -27,20 +27,32 @@ async def test_async_setup_registers_service() -> None:
 
 
 @pytest.mark.asyncio
-async def test_hello_world_service_logs_hello_world() -> None:
-    """Test that the hello_world service handler logs 'Hello World'."""
+async def test_hello_world_service_logs_config() -> None:
+    """Test that the hello_world service handler logs the configuration."""
     hass = MagicMock()
     hass.services = MagicMock()
+    hass.data = {}
 
-    with patch("custom_components.resume_state._LOGGER") as mock_logger:
-        await async_setup(hass, {})
+    config = {
+        DOMAIN: {
+            "entities": ["light.living_room", "switch.fan"],
+            "delay": 5,
+        }
+    }
+
+    with patch("custom_components.resume_state.services._LOGGER") as mock_logger:
+        await async_setup(hass, config)
 
         # Get the registered handler
         args, _kwargs = hass.services.async_register.call_args
         handler = args[2]
 
         # Call the handler
-        await handler(MagicMock())
+        mock_call = MagicMock()
+        mock_call.hass = hass
+        await handler(mock_call)
 
-        # Verify it logged "Hello World"
-        mock_logger.info.assert_called_once_with("Hello World")
+        # Verify it logged the config correctly
+        mock_logger.info.assert_any_call(
+            "Config %s %s", ["light.living_room", "switch.fan"], 5
+        )
