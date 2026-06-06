@@ -12,6 +12,20 @@ permissions:
   contents: read
 
 jobs:
+  lint-docs:
+    name: Lint docs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Lint docs
+        uses: DavidAnson/markdownlint-cli2-action@v23
+        with:
+          config: .markdownlint.yaml
+          fix: false
+          glob: '**/*.md'
+
   ruff:
     name: "Ruff"
     runs-on: "ubuntu-latest"
