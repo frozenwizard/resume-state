@@ -5,8 +5,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.helpers.discovery import async_load_platform
+
 from .config import CONF_DELAY, CONF_ENTITIES
-from .services import async_setup_services
 
 if TYPE_CHECKING:
     from homeassistant import core
@@ -28,8 +29,10 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
     hass.data[DOMAIN] = {
         CONF_ENTITIES: conf.get(CONF_ENTITIES),
         CONF_DELAY: conf.get(CONF_DELAY),
+        "pressed_at": None,
     }
 
-    await async_setup_services(hass)
+    hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, _config))
+    hass.async_create_task(async_load_platform(hass, "button", DOMAIN, {}, _config))
 
     return True

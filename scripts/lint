@@ -7,4 +7,14 @@ cd "$(dirname "$0")/.."
 ruff format .
 ruff check . --fix
 
+echo "Running mypy..."
+python3 -m mypy custom_components tests
+
 markdownlint -c .markdownlint.yaml **/*.md
+
+echo "Formatting JSON files with jq..."
+find . -name "*.json" -not -path "*/\.*" | while read -r file; do
+  # Format with jq and write to a temporary file, then replace the original
+  jq . "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+done
+echo "JSON formatting complete."

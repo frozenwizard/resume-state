@@ -1,21 +1,29 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "description": "If you need help with the configuration have a look here: {documentation_url}",
-                "data": {
-                    "username": "Username",
-                    "password": "Password"
-                }
-            }
-        },
-        "error": {
-            "auth": "Username/Password is wrong.",
-            "connection": "Unable to connect to the server.",
-            "unknown": "Unknown error occurred."
-        },
-        "abort": {
-            "already_configured": "This entry is already configured."
+  "entity": {
+    "button": {
+      "store_state": {
+        "name": "Store Home State"
+      },
+      "resume_state": {
+        "name": "Resume Home State"
+      },
+      "clear_state": {
+        "name": "Clear Home State"
+      }
+    },
+    "sensor": {
+      "resume_at": {
+        "name": "When to resume"
+      },
+      "resume_status": {
+        "name": "Status",
+        "state": {
+          "cleared": "Cleared",
+          "stored": "Stored",
+          "resuming": "Resuming",
+          "errored": "Errored"
         }
+      }
     }
+  }
 }

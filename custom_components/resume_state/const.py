@@ -1,4 +1,4 @@
 """Constants for the Resume State component."""
 
 DOMAIN = "resume_state"
-SERVICE_HELLO_WORLD = "hello_world"
+SIGNAL_UPDATE_RESUME_STATE = f"{DOMAIN}_update_state"

@@ -31,4 +31,4 @@ jobs:
           python3 -m pip install -r requirements_test.txt
 
       - name: Run tests
-        run: python3 -m pytest tests/test_init.py
+        run: python3 -m pytest tests/
