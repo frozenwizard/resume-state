@@ -8,7 +8,7 @@ from .const import DOMAIN
 CONF_ENTITIES = "entities"
 CONF_DELAY = "delay"
 CONF_DELAY_DEFAULT = 0
-CONF_ENTITIES_DEFAULT = []
+CONF_ENTITIES_DEFAULT: list[str] = []
 
 CONFIG_SCHEMA = vol.Schema(
     {

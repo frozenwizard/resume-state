@@ -42,8 +42,22 @@ jobs:
       - name: Install requirements
         run: python3 -m pip install -r requirements.txt
 
-      - name: Lint
+      - name: Lint (Ruff)
         run: python3 -m ruff check .
+
+      - name: Type check (Mypy)
+        run: python3 -m mypy custom_components tests
 
       - name: Format
         run: python3 -m ruff format . --check
+
+      - name: Check JSON formatting (jq)
+        run: |
+          find . -name "*.json" -not -path "*/\.*" | while read -r file; do
+            jq . "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+          done
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "JSON files are not formatted correctly. Please run scripts/lint."
+            git diff
+            exit 1
+          fi

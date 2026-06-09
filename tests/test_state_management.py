@@ -6,7 +6,7 @@ import pytest
 
 from custom_components.resume_state.button import ClearStateButton, StoreStateButton
 from custom_components.resume_state.const import DOMAIN
-from custom_components.resume_state.sensor import ResumeStateSensor
+from custom_components.resume_state.sensor import ResumeStateSensor, ResumeStatusSensor
 
 
 @pytest.mark.asyncio
@@ -20,6 +20,9 @@ async def test_store_and_clear_state() -> None:
     sensor = ResumeStateSensor()
     sensor.hass = hass
 
+    status_sensor = ResumeStatusSensor()
+    status_sensor.hass = hass
+
     store_button = StoreStateButton()
     store_button.hass = hass
 
@@ -28,19 +31,23 @@ async def test_store_and_clear_state() -> None:
 
     # 1. Initial state check
     assert sensor.native_value is None
+    assert status_sensor.native_value == "cleared"
 
     # 2. Store the state
     await store_button.async_press()
 
-    # 3. Check the sensor has updated to a timestamp
-    stored_timestamp = sensor.native_value
+    # 3. Check the sensors have updated
+    stored_timestamp = hass.data[DOMAIN]["pressed_at"]
     assert stored_timestamp is not None
+    assert status_sensor.native_value == "stored"
+
     # We can also verify it's in the hass.data directly
-    assert hass.data[DOMAIN]["pressed_at"] == stored_timestamp
+    assert sensor.native_value == stored_timestamp
 
     # 4. Clear the state
     await clear_button.async_press()
 
-    # 5. Check the sensor is cleared
+    # 5. Check the sensors are cleared
     assert sensor.native_value is None
+    assert status_sensor.native_value == "cleared"
     assert hass.data[DOMAIN]["pressed_at"] is None
