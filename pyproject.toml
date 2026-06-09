@@ -20,6 +20,10 @@ warn_unreachable = true
 explicit_package_bases = true
 namespace_packages = true
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
+
 [tool.ruff]
 # The contents of this file is based on https://github.com/home-assistant/core/blob/dev/pyproject.toml
 target-version = "py314"
