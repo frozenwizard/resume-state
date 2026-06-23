@@ -1,5 +1,4 @@
 {
   "name": "Resume State",
-  "homeassistant": "2026.6.0",
-  "dependencies": ["recorder"]
+  "homeassistant": "2026.6.0"
 }
