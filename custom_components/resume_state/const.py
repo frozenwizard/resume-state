@@ -2,3 +2,5 @@
 
 DOMAIN = "resume_state"
 SIGNAL_UPDATE_RESUME_STATE = f"{DOMAIN}_update_state"
+
+SUPPORTED_DOMAINS: set[str] = {"light"}

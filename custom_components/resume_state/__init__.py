@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.helpers.discovery import async_load_platform
 
 from .config import CONF_DELAY, CONF_ENTITIES
+from .sensor import ResumeStatus
 
 if TYPE_CHECKING:
     from homeassistant import core
@@ -30,6 +31,7 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
         CONF_ENTITIES: conf.get(CONF_ENTITIES),
         CONF_DELAY: conf.get(CONF_DELAY),
         "pressed_at": None,
+        "status": ResumeStatus.CLEARED.value,
     }
 
     hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, _config))

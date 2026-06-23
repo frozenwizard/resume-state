@@ -5,6 +5,9 @@
     "@frozenwizard"
   ],
   "config_flow": false,
+  "dependencies": [
+    "recorder"
+  ],
   "documentation": "https://github.com/frozenwizard/resume-state",
   "iot_class": "assumed_state",
   "issue_tracker": "https://github.com/frozenwizard/resume-state/issues",

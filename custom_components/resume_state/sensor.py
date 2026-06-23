@@ -92,7 +92,5 @@ class ResumeStatusSensor(SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the current status."""
-        pressed_at = self.hass.data[DOMAIN].get("pressed_at")
-        if pressed_at is not None:
-            return ResumeStatus.STORED.value
-        return ResumeStatus.CLEARED.value
+        status: str = self.hass.data[DOMAIN].get("status", ResumeStatus.CLEARED.value)
+        return status
