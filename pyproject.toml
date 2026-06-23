@@ -1,3 +1,8 @@
+[tool.pytest.ini_options]
+# pytest-homeassistant-custom-component ships async autouse fixtures that
+# require auto mode; strict mode (pytest-asyncio default) breaks them.
+asyncio_mode = "auto"
+
 [tool.mypy]
 python_version = "3.14"
 show_error_codes = true
