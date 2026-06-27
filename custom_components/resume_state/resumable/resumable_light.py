@@ -30,15 +30,12 @@ COLOR_MODE_ATTR: dict[str, str] = {
 class ResumableLight(ResumableEntity):
     """A light entity that is resumable."""
 
-    def __init__(
-        self, hass: HomeAssistant, entity_id: str, previous_state: State
-    ) -> None:
+    def __init__(self, entity_id: str, previous_state: State) -> None:
         """Initialize the resumable light."""
-        self.hass = hass
         self.entity_id = entity_id
         self.previous_state = previous_state
 
-    async def resume(self) -> None:
+    async def resume(self, hass: HomeAssistant) -> None:
         """Handle resuming the light with its previous attributes."""
         # Skip if the historical state was an error state
         if self.previous_state.state in ("unavailable", "unknown"):
@@ -54,13 +51,13 @@ class ResumableLight(ResumableEntity):
         )
 
         # Skip the service call if the light is already in the target state.
-        current_state = self.hass.states.get(self.entity_id)
+        current_state = hass.states.get(self.entity_id)
 
         if self.previous_state.state == "off":
             if current_state and current_state.state == "off":
                 _LOGGER.info("State for %s already matches", self.entity_id)
                 return
-            await self.hass.services.async_call(
+            await hass.services.async_call(
                 domain=LIGHT_DOMAIN,
                 service="turn_off",
                 service_data={"entity_id": self.entity_id},
@@ -90,7 +87,7 @@ class ResumableLight(ResumableEntity):
                 self.entity_id,
                 service_data,
             )
-            await self.hass.services.async_call(
+            await hass.services.async_call(
                 domain=LIGHT_DOMAIN,
                 service="turn_on",
                 service_data=service_data,

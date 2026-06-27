@@ -67,12 +67,12 @@ class ResumeStateButton(ButtonEntity):
                     _LOGGER.info("Entity %s has no history at %s", entity_id, resume_at)
                     continue
                 resumable_entity: ResumableEntity | None = build_resumable_entity(
-                    self.hass, entity_id, past_state
+                    entity_id, past_state
                 )
                 if resumable_entity is None:
                     _LOGGER.warning("Entity %s is not yet supported", entity_id)
                     continue
-                await resumable_entity.resume()
+                await resumable_entity.resume(self.hass)
 
             except Exception:
                 _LOGGER.exception("Failed to resume %s", entity_id)

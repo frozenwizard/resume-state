@@ -1,14 +1,17 @@
 """Resumable base entity."""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 
 class ResumableEntity(ABC):
     """Base class for resumable entities."""
 
     @abstractmethod
-    async def resume(self) -> None:
+    async def resume(self, hass: HomeAssistant) -> None:
         """Resume the entity."""
 
     def _normalize(self, value: Any) -> Any:
