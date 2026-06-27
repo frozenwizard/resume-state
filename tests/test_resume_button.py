@@ -444,15 +444,15 @@ async def test_resume_no_history(
     """Test when state_changes_during_period returns empty."""
     entity_id = "light.test"
     resume_at = dt_util.utcnow()
-    
+
     hass.data[DOMAIN] = {
         CONF_ENTITIES: [entity_id],
         "pressed_at": resume_at,
         "status": ResumeStatus.STORED.value,
     }
-    
-    historical_states = {}
-    
+
+    historical_states: dict[str, list[State]] = {}
+
     with (
         patch(
             "custom_components.resume_state.buttons.resume_state.get_instance",
@@ -474,13 +474,13 @@ async def test_resume_unsupported_domain(
     """Test when an unsupported domain is in the config."""
     entity_id = "switch.test"
     resume_at = dt_util.utcnow()
-    
+
     hass.data[DOMAIN] = {
         CONF_ENTITIES: [entity_id],
         "pressed_at": resume_at,
         "status": ResumeStatus.STORED.value,
     }
-    
+
     await resume_button.async_press()
 
     assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
@@ -492,14 +492,14 @@ async def test_resume_unsupported_entity_class(
     """Test when build_resumable_entity returns None."""
     entity_id = "light.test"
     resume_at = dt_util.utcnow()
-    
+
     hass.data[DOMAIN] = {
         CONF_ENTITIES: [entity_id],
         "pressed_at": resume_at,
         "status": ResumeStatus.STORED.value,
     }
     historical_states = {entity_id: [State(entity_id, "on")]}
-    
+
     with (
         patch(
             "custom_components.resume_state.buttons.resume_state.get_instance",
@@ -512,7 +512,7 @@ async def test_resume_unsupported_entity_class(
         patch(
             "custom_components.resume_state.buttons.resume_state.build_resumable_entity",
             return_value=None,
-        )
+        ),
     ):
         await resume_button.async_press()
 
@@ -525,17 +525,17 @@ async def test_resume_exception_during_restore(
     """Test when resumable_entity.resume() raises an exception."""
     entity_id = "light.test"
     resume_at = dt_util.utcnow()
-    
+
     hass.data[DOMAIN] = {
         CONF_ENTITIES: [entity_id],
         "pressed_at": resume_at,
         "status": ResumeStatus.STORED.value,
     }
     historical_states = {entity_id: [State(entity_id, "on")]}
-    
+
     mock_entity = AsyncMock()
     mock_entity.resume.side_effect = Exception("Test exception")
-    
+
     with (
         patch(
             "custom_components.resume_state.buttons.resume_state.get_instance",
@@ -548,7 +548,7 @@ async def test_resume_exception_during_restore(
         patch(
             "custom_components.resume_state.buttons.resume_state.build_resumable_entity",
             return_value=mock_entity,
-        )
+        ),
     ):
         await resume_button.async_press()
 
@@ -586,4 +586,3 @@ async def test_resume_light_unhandled_state(
         await resume_button.async_press()
 
     assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
-

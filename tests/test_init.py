@@ -1,17 +1,19 @@
 """Tests for setup of the Resume State component."""
 
+from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
-
-from homeassistant.core import HomeAssistant
 
 from custom_components.resume_state import async_setup
 from custom_components.resume_state.const import DOMAIN
 from custom_components.resume_state.sensor import ResumeStatus
 
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
 
 async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
     """Test setting up the integration with a valid config."""
-    config = {
+    config: dict[str, Any] = {
         DOMAIN: {
             "entities": ["light.test_light"],
             "delay": 5,
@@ -40,7 +42,7 @@ async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
 
 async def test_async_setup_missing_config(hass: HomeAssistant) -> None:
     """Test setting up the integration with missing config."""
-    config = {}
+    config: dict[str, Any] = {}
 
     result = await async_setup(hass, config)
     assert result is False
