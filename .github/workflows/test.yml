@@ -30,5 +30,13 @@ jobs:
           python3 -m pip install -r requirements.txt
           python3 -m pip install -r requirements_test.txt
 
-      - name: Run tests
-        run: python3 -m pytest tests/
+      - name: Run tests with coverage
+        run: |
+          python3 -m pytest tests/ --cov=custom_components.resume_state --cov-report=term-missing | tee coverage_report.txt
+
+      - name: Add Coverage Report to Summary
+        run: |
+          echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          cat coverage_report.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
