@@ -65,7 +65,7 @@ async def test_resume_light_off(
 
     assert len(calls) == 1
     assert calls[0].data == {"entity_id": entity_id}
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
     assert hass.data[DOMAIN]["pressed_at"] is None
 
 
@@ -192,7 +192,7 @@ async def test_resume_color_temp_light_sends_only_color_temp(
         "brightness": 180,
         "color_temp_kelvin": 3000,
     }
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
 
 
 async def test_resume_skip_if_matches_rgb(
@@ -365,7 +365,7 @@ async def test_resume_without_stored_state_errors(
     hass.data[DOMAIN] = {
         CONF_ENTITIES: ["light.test"],
         "pressed_at": None,
-        "status": ResumeStatus.CLEARED.value,
+        "status": ResumeStatus.IDLE.value,
     }
 
     turn_on = async_mock_service(hass, LIGHT_DOMAIN, "turn_on")
@@ -381,7 +381,7 @@ async def test_resume_without_stored_state_errors(
 async def test_resume_status_sensor_updates(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
-    """A successful resume ends in the CLEARED status."""
+    """A successful resume ends in the IDLE status."""
     entity_id = "light.test"
     resume_at = dt_util.utcnow()
 
@@ -412,13 +412,13 @@ async def test_resume_status_sensor_updates(
 
         await resume_button.async_press()
 
-        assert status_sensor.native_value == ResumeStatus.CLEARED.value
+        assert status_sensor.native_value == ResumeStatus.IDLE.value
 
 
 async def test_resume_status_sensor_updates_no_entities(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
-    """With no resumable entities, the status resets to CLEARED."""
+    """With no resumable entities, the status resets to IDLE."""
     resume_at = dt_util.utcnow()
 
     hass.data[DOMAIN] = {
@@ -434,7 +434,7 @@ async def test_resume_status_sensor_updates_no_entities(
 
     await resume_button.async_press()
 
-    assert status_sensor.native_value == ResumeStatus.CLEARED.value
+    assert status_sensor.native_value == ResumeStatus.IDLE.value
     assert hass.data[DOMAIN]["pressed_at"] is None
 
 
@@ -465,7 +465,7 @@ async def test_resume_no_history(
     ):
         await resume_button.async_press()
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
 
 
 async def test_resume_unsupported_domain(
@@ -483,7 +483,7 @@ async def test_resume_unsupported_domain(
 
     await resume_button.async_press()
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
 
 
 async def test_resume_unsupported_entity_class(
@@ -516,7 +516,7 @@ async def test_resume_unsupported_entity_class(
     ):
         await resume_button.async_press()
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
 
 
 async def test_resume_exception_during_restore(
@@ -585,4 +585,25 @@ async def test_resume_light_unhandled_state(
         # Should complete without error and NOT call turn_on or turn_off
         await resume_button.async_press()
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+
+
+async def test_resume_button_disabled(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test that pressing resume when disabled sets status to DISABLED and skips."""
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: ["light.test"],
+        "pressed_at": dt_util.utcnow(),
+        "status": ResumeStatus.STORED.value,
+        "enabled": False,
+    }
+
+    turn_on = async_mock_service(hass, LIGHT_DOMAIN, "turn_on")
+    turn_off = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+
+    await resume_button.async_press()
+
+    assert not turn_on
+    assert not turn_off
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.DISABLED.value

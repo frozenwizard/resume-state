@@ -31,13 +31,15 @@ async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
         assert hass.data[DOMAIN]["entities"] == ["light.test_light"]
         assert hass.data[DOMAIN]["delay"] == 5
         assert hass.data[DOMAIN]["pressed_at"] is None
-        assert hass.data[DOMAIN]["status"] == ResumeStatus.CLEARED.value
+        assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+        assert hass.data[DOMAIN]["enabled"] is True
 
-        assert mock_load_platform.call_count == 2
+        assert mock_load_platform.call_count == 3
         calls = mock_load_platform.call_args_list
         platforms = [call[0][1] for call in calls]
         assert "sensor" in platforms
         assert "button" in platforms
+        assert "switch" in platforms
 
 
 async def test_async_setup_missing_config(hass: HomeAssistant) -> None:

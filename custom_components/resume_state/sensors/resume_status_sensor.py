@@ -35,5 +35,5 @@ class ResumeStatusSensor(SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the current status."""
-        status: str = self.hass.data[DOMAIN].get("status", ResumeStatus.CLEARED.value)
+        status: str = self.hass.data[DOMAIN].get("status", ResumeStatus.IDLE.value)
         return status

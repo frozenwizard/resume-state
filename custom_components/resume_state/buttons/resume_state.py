@@ -41,6 +41,11 @@ class ResumeStateButton(ButtonEntity):
         """Handle the button press."""
         _LOGGER.info("Begin resuming state")
 
+        if not self.hass.data[DOMAIN].get("enabled", True):
+            _LOGGER.warning("Resume state is disabled")
+            self._set_status(ResumeStatus.DISABLED)
+            return
+
         resume_at: datetime | None = self.hass.data[DOMAIN].get("pressed_at")
         if resume_at is None:
             _LOGGER.warning("Nothing to resume: no state has been stored")
@@ -51,7 +56,7 @@ class ResumeStateButton(ButtonEntity):
         if not filtered_entities_to_resume:
             _LOGGER.warning("No entities to resume")
             self.hass.data[DOMAIN]["pressed_at"] = None
-            self._set_status(ResumeStatus.CLEARED)
+            self._set_status(ResumeStatus.IDLE)
             return
 
         self._set_status(ResumeStatus.RESUMING)
@@ -79,7 +84,7 @@ class ResumeStateButton(ButtonEntity):
                 had_error = True
 
         self.hass.data[DOMAIN]["pressed_at"] = None
-        self._set_status(ResumeStatus.ERRORED if had_error else ResumeStatus.CLEARED)
+        self._set_status(ResumeStatus.ERRORED if had_error else ResumeStatus.IDLE)
 
     def _set_status(self, status: ResumeStatus) -> None:
         """Update the stored status and notify the sensors."""
