@@ -7,13 +7,15 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers.discovery import async_load_platform
 
-from .config import CONF_DELAY, CONF_ENTITIES
+from .config import CONF_DELAY, CONF_ENTITIES, CONFIG_SCHEMA
 from .sensor import ResumeStatus
 
 if TYPE_CHECKING:
     from homeassistant import core
 
 from .const import DOMAIN
+
+__all__ = ["CONFIG_SCHEMA", "async_setup"]
 
 _LOGGER = logging.getLogger(__name__)
 
