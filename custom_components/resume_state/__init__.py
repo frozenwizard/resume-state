@@ -31,10 +31,12 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
         CONF_ENTITIES: conf.get(CONF_ENTITIES),
         CONF_DELAY: conf.get(CONF_DELAY),
         "pressed_at": None,
-        "status": ResumeStatus.CLEARED.value,
+        "status": ResumeStatus.IDLE.value,
+        "enabled": True,
     }
 
     hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, _config))
     hass.async_create_task(async_load_platform(hass, "button", DOMAIN, {}, _config))
+    hass.async_create_task(async_load_platform(hass, "switch", DOMAIN, {}, _config))
 
     return True

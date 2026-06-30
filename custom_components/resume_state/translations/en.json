@@ -11,6 +11,11 @@
         "name": "Clear Home State"
       }
     },
+    "switch": {
+      "resume_state_enabled": {
+        "name": "Enable Resume State"
+      }
+    },
     "sensor": {
       "resume_at": {
         "name": "When to resume"
@@ -18,10 +23,11 @@
       "resume_status": {
         "name": "Status",
         "state": {
-          "cleared": "Cleared",
+          "idle": "Idle",
           "stored": "Stored",
           "resuming": "Resuming",
-          "errored": "Errored"
+          "errored": "Errored",
+          "disabled": "Disabled"
         }
       }
     }

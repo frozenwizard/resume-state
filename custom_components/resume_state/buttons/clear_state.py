@@ -25,5 +25,5 @@ class ClearStateButton(ButtonEntity):
         """Handle the button press."""
         _LOGGER.info("Clearing State")
         self.hass.data[DOMAIN]["pressed_at"] = None
-        self.hass.data[DOMAIN]["status"] = ResumeStatus.CLEARED.value
+        self.hass.data[DOMAIN]["status"] = ResumeStatus.IDLE.value
         async_dispatcher_send(self.hass, SIGNAL_UPDATE_RESUME_STATE)

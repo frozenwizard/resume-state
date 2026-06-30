@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 async def test_store_and_clear_state(hass: HomeAssistant) -> None:
     """Test storing the state, checking the sensor, and clearing it."""
     # Initialize the data structure as the setup would
-    hass.data[DOMAIN] = {"pressed_at": None, "status": ResumeStatus.CLEARED.value}
+    hass.data[DOMAIN] = {"pressed_at": None, "status": ResumeStatus.IDLE.value}
 
     # Instantiate the components, ensuring they share the same hass instance
     sensor = ResumeStateSensor()
@@ -34,7 +34,7 @@ async def test_store_and_clear_state(hass: HomeAssistant) -> None:
 
     # 1. Initial state check
     assert sensor.native_value is None
-    assert status_sensor.native_value == ResumeStatus.CLEARED.value
+    assert status_sensor.native_value == ResumeStatus.IDLE.value
 
     # 2. Store the state
     await store_button.async_press()
@@ -52,5 +52,5 @@ async def test_store_and_clear_state(hass: HomeAssistant) -> None:
 
     # 5. Check the sensors are cleared
     assert sensor.native_value is None
-    assert status_sensor.native_value == ResumeStatus.CLEARED.value
+    assert status_sensor.native_value == ResumeStatus.IDLE.value
     assert hass.data[DOMAIN]["pressed_at"] is None
