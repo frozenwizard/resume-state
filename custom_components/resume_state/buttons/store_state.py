@@ -28,5 +28,7 @@ class StoreStateButton(ButtonEntity):
         _LOGGER.info("Storing state at %s", pressed_at)
 
         self.hass.data[DOMAIN]["pressed_at"] = pressed_at
-        self.hass.data[DOMAIN]["status"] = ResumeStatus.STORED.value
+        # Storing the snapshot is allowed while disabled
+        if self.hass.data[DOMAIN].get("status") != ResumeStatus.DISABLED.value:
+            self.hass.data[DOMAIN]["status"] = ResumeStatus.STORED.value
         async_dispatcher_send(self.hass, SIGNAL_UPDATE_RESUME_STATE)
