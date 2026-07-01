@@ -6,8 +6,8 @@ import voluptuous as vol
 from .const import DOMAIN
 
 CONF_ENTITIES = "entities"
-CONF_DELAY = "delay"
-CONF_DELAY_DEFAULT = 0
+CONF_THROTTLE = "throttle"
+CONF_THROTTLE_DEFAULT = 0
 CONF_ENTITIES_DEFAULT: list[str] = []
 
 CONFIG_SCHEMA = vol.Schema(
@@ -16,8 +16,10 @@ CONFIG_SCHEMA = vol.Schema(
             {
                 # Expects a list of strings, validates they look like entity IDs
                 vol.Required(CONF_ENTITIES): cv.entity_ids,
-                # Expects an integer, defaults to 0 if missing
-                vol.Optional(CONF_DELAY, default=CONF_DELAY_DEFAULT): cv.positive_int,
+                # Milliseconds to wait between resuming each entity; defaults to 0
+                vol.Optional(
+                    CONF_THROTTLE, default=CONF_THROTTLE_DEFAULT
+                ): cv.positive_int,
             }
         )
     },

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers.discovery import async_load_platform
 
-from .config import CONF_DELAY, CONF_ENTITIES, CONFIG_SCHEMA
+from .config import CONF_ENTITIES, CONF_THROTTLE, CONFIG_SCHEMA
 from .sensor import ResumeStatus
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
         CONF_ENTITIES: conf.get(CONF_ENTITIES),
-        CONF_DELAY: conf.get(CONF_DELAY),
+        CONF_THROTTLE: conf.get(CONF_THROTTLE),
         "pressed_at": None,
         "status": ResumeStatus.IDLE.value,
         "enabled": True,

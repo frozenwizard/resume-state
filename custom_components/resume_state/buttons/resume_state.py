@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from functools import partial
 from typing import TYPE_CHECKING
@@ -12,7 +13,11 @@ from homeassistant.components.recorder.history import state_changes_during_perio
 from homeassistant.core import State, split_entity_id
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.resume_state.config import CONF_ENTITIES
+from custom_components.resume_state.config import (
+    CONF_ENTITIES,
+    CONF_THROTTLE,
+    CONF_THROTTLE_DEFAULT,
+)
 from custom_components.resume_state.const import (
     DOMAIN,
     SIGNAL_UPDATE_RESUME_STATE,
@@ -61,6 +66,11 @@ class ResumeStateButton(ButtonEntity):
 
         self._set_status(ResumeStatus.RESUMING)
 
+        # Milliseconds to wait after resuming each entity.
+        throttle_ms: int = self.hass.data[DOMAIN].get(
+            CONF_THROTTLE, CONF_THROTTLE_DEFAULT
+        )
+
         # Isolate failures per entity: one entity failing to restore should not
         # abort the others, and the snapshot is always cleared afterwards so the
         # timestamp sensor and status sensor never disagree.
@@ -77,7 +87,9 @@ class ResumeStateButton(ButtonEntity):
                 if resumable_entity is None:
                     _LOGGER.warning("Entity %s is not yet supported", entity_id)
                     continue
+
                 await resumable_entity.resume(self.hass)
+                await asyncio.sleep(throttle_ms / 1000)
 
             except Exception:
                 _LOGGER.exception("Failed to resume %s", entity_id)
