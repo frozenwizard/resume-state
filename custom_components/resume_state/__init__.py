@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.auth.models import User
 from homeassistant.helpers.discovery import async_load_platform
 
 from .config import CONF_ENTITIES, CONF_THROTTLE, CONFIG_SCHEMA
 from .sensor import ResumeStatus
+from .user import async_get_or_create_user
 
 if TYPE_CHECKING:
     from homeassistant import core
@@ -28,6 +30,10 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
         _LOGGER.error("No configuration found for Resume State")
         return False
 
+    # Act as a dedicated system user so restored changes are attributed to the
+    # integration in the logbook, distinct from the user's own actions.
+    user: User = await async_get_or_create_user(hass)
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
         CONF_ENTITIES: conf.get(CONF_ENTITIES),
@@ -35,6 +41,7 @@ async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool
         "pressed_at": None,
         "status": ResumeStatus.IDLE.value,
         "enabled": True,
+        "user_id": user.id,
     }
 
     hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, _config))

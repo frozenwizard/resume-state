@@ -687,3 +687,77 @@ async def test_resume_throttle_only_waits_after_resumed_entities(
 
     # Only light.one actually resumed, so exactly one wait.
     mock_sleep.assert_awaited_once_with(0.25)
+
+
+async def test_resume_runs_as_integration_user(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Resume issues its light service calls under the integration user id."""
+    entity_id = "light.test"
+    resume_at = dt_util.utcnow()
+    user_id = "resume-state-user-id"
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+        "user_id": user_id,
+    }
+
+    hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    # The change is attributed to the integration's user in the logbook.
+    assert calls[0].context.user_id == user_id
+
+
+async def test_resume_uses_a_fresh_context_per_entity(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Each resumed entity gets its own context id, all under the same user."""
+    entities = ["light.one", "light.two"]
+    resume_at = dt_util.utcnow()
+    user_id = "resume-state-user-id"
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: entities,
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+        "user_id": user_id,
+    }
+
+    for entity_id in entities:
+        hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")] for entity_id in entities}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 2
+    # Same integration user, but an independent context per entity.
+    assert {call.context.user_id for call in calls} == {user_id}
+    assert calls[0].context.id != calls[1].context.id
