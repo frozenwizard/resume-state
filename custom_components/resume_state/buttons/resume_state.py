@@ -66,17 +66,16 @@ class ResumeStateButton(ButtonEntity):
 
         self._set_status(ResumeStatus.RESUMING)
 
-        # Milliseconds to wait resuming inbetween each entity
+        # Milliseconds to wait after resuming each entity.
         throttle_ms: int = self.hass.data[DOMAIN].get(
             CONF_THROTTLE, CONF_THROTTLE_DEFAULT
         )
-        last_index = len(filtered_entities_to_resume) - 1
 
         # Isolate failures per entity: one entity failing to restore should not
         # abort the others, and the snapshot is always cleared afterwards so the
         # timestamp sensor and status sensor never disagree.
         had_error = False
-        for index, entity_id in enumerate(filtered_entities_to_resume):
+        for entity_id in filtered_entities_to_resume:
             try:
                 past_state = await self._async_historical_state(entity_id, resume_at)
                 if past_state is None:
@@ -90,11 +89,7 @@ class ResumeStateButton(ButtonEntity):
                     continue
 
                 await resumable_entity.resume(self.hass)
-
-                # Resume, then wait before moving to the next entity — but not
-                # after the last one, and not at all when the throttle is off.
-                if throttle_ms > 0 and index < last_index:
-                    await asyncio.sleep(throttle_ms / 1000)
+                await asyncio.sleep(throttle_ms / 1000)
 
             except Exception:
                 _LOGGER.exception("Failed to resume %s", entity_id)

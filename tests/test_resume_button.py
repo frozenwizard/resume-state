@@ -609,10 +609,10 @@ async def test_resume_button_disabled(
     assert hass.data[DOMAIN]["status"] == ResumeStatus.DISABLED.value
 
 
-async def test_resume_throttles_between_entities(
+async def test_resume_throttle_waits_after_each_resume(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
-    """Throttle sleeps between consecutive resumes: N resumes -> N-1 waits."""
+    """The throttle sleeps once after every resumed entity, including the last."""
     entities = ["light.one", "light.two", "light.three"]
     resume_at = dt_util.utcnow()
 
@@ -644,21 +644,21 @@ async def test_resume_throttles_between_entities(
     ):
         await resume_button.async_press()
 
-    # Three resumes -> two gaps, each waiting 250ms expressed in seconds.
-    assert mock_sleep.await_count == 2
+    # Three resumes -> three waits of 250ms expressed in seconds.
+    assert mock_sleep.await_count == 3
     assert all(call.args == (0.25,) for call in mock_sleep.await_args_list)
 
 
-async def test_resume_no_throttle_when_zero(
+async def test_resume_throttle_only_waits_after_resumed_entities(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
-    """A throttle of 0 (the default) never sleeps between resumes."""
+    """A skipped (history-less) entity is not followed by a throttle wait."""
     entities = ["light.one", "light.two"]
     resume_at = dt_util.utcnow()
 
     hass.data[DOMAIN] = {
         CONF_ENTITIES: entities,
-        CONF_THROTTLE: 0,
+        CONF_THROTTLE: 250,
         "pressed_at": resume_at,
         "status": ResumeStatus.STORED.value,
     }
@@ -666,7 +666,8 @@ async def test_resume_no_throttle_when_zero(
     for entity_id in entities:
         hass.states.async_set(entity_id, "on")
     async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
-    historical_states = {entity_id: [State(entity_id, "off")] for entity_id in entities}
+    # Only light.one has recorded history; light.two is skipped entirely.
+    historical_states = {"light.one": [State("light.one", "off")]}
 
     with (
         patch(
@@ -684,4 +685,5 @@ async def test_resume_no_throttle_when_zero(
     ):
         await resume_button.async_press()
 
-    mock_sleep.assert_not_awaited()
+    # Only light.one actually resumed, so exactly one wait.
+    mock_sleep.assert_awaited_once_with(0.25)
