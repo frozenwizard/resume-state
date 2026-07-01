@@ -16,7 +16,7 @@ async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
     config: dict[str, Any] = {
         DOMAIN: {
             "entities": ["light.test_light"],
-            "delay": 5,
+            "throttle": 5,
         }
     }
 
@@ -29,7 +29,7 @@ async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
         assert result is True
         assert DOMAIN in hass.data
         assert hass.data[DOMAIN]["entities"] == ["light.test_light"]
-        assert hass.data[DOMAIN]["delay"] == 5
+        assert hass.data[DOMAIN]["throttle"] == 5
         assert hass.data[DOMAIN]["pressed_at"] is None
         assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
         assert hass.data[DOMAIN]["enabled"] is True

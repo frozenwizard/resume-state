@@ -11,7 +11,7 @@ from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_mock_service
 
 from custom_components.resume_state.button import ResumeStateButton
-from custom_components.resume_state.config import CONF_ENTITIES
+from custom_components.resume_state.config import CONF_ENTITIES, CONF_THROTTLE
 from custom_components.resume_state.const import DOMAIN
 from custom_components.resume_state.sensor import ResumeStatus, ResumeStatusSensor
 
@@ -607,3 +607,81 @@ async def test_resume_button_disabled(
     assert not turn_on
     assert not turn_off
     assert hass.data[DOMAIN]["status"] == ResumeStatus.DISABLED.value
+
+
+async def test_resume_throttles_between_entities(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Throttle sleeps between consecutive resumes: N resumes -> N-1 waits."""
+    entities = ["light.one", "light.two", "light.three"]
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: entities,
+        CONF_THROTTLE: 250,  # milliseconds
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    for entity_id in entities:
+        hass.states.async_set(entity_id, "on")
+    async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")] for entity_id in entities}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.asyncio.sleep",
+            new_callable=AsyncMock,
+        ) as mock_sleep,
+    ):
+        await resume_button.async_press()
+
+    # Three resumes -> two gaps, each waiting 250ms expressed in seconds.
+    assert mock_sleep.await_count == 2
+    assert all(call.args == (0.25,) for call in mock_sleep.await_args_list)
+
+
+async def test_resume_no_throttle_when_zero(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """A throttle of 0 (the default) never sleeps between resumes."""
+    entities = ["light.one", "light.two"]
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: entities,
+        CONF_THROTTLE: 0,
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    for entity_id in entities:
+        hass.states.async_set(entity_id, "on")
+    async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")] for entity_id in entities}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.asyncio.sleep",
+            new_callable=AsyncMock,
+        ) as mock_sleep,
+    ):
+        await resume_button.async_press()
+
+    mock_sleep.assert_not_awaited()
