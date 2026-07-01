@@ -8,15 +8,12 @@ from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from custom_components.resume_state.resumable.resumable_entity import ResumableEntity
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant, State
+    from homeassistant.core import Context, HomeAssistant, State
 
 _LOGGER = logging.getLogger(__name__)
-# Maps a light's recorded ``color_mode`` to the single attribute that should be
-# replayed to ``light.turn_on``. Home Assistant exposes every color
-# representation simultaneously (with ``None`` for the inactive ones, and even a
-# derived ``rgb_color`` while in ``color_temp`` mode), but ``light.turn_on``
-# rejects more than one color from its exclusive group, so we restore only the
-# representation that was actually active.
+# The single color attribute to replay to light.turn_on for each color_mode.
+# HA reports every color representation at once, but turn_on accepts only one,
+# so we restore just the one matching the recorded color_mode.
 COLOR_MODE_ATTR: dict[str, str] = {
     "color_temp": "color_temp_kelvin",
     "hs": "hs_color",
@@ -35,7 +32,7 @@ class ResumableLight(ResumableEntity):
         self.entity_id = entity_id
         self.previous_state = previous_state
 
-    async def resume(self, hass: HomeAssistant) -> None:
+    async def resume(self, hass: HomeAssistant, context: Context) -> None:
         """Handle resuming the light with its previous attributes."""
         # Skip if the historical state was an error state
         if self.previous_state.state in ("unavailable", "unknown"):
@@ -62,6 +59,7 @@ class ResumableLight(ResumableEntity):
                 service="turn_off",
                 service_data={"entity_id": self.entity_id},
                 blocking=True,
+                context=context,
             )
             return
 
@@ -92,6 +90,7 @@ class ResumableLight(ResumableEntity):
                 service="turn_on",
                 service_data=service_data,
                 blocking=True,
+                context=context,
             )
             return
 

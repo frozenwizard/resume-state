@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.button import ButtonEntity
 from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.history import state_changes_during_period
-from homeassistant.core import State, split_entity_id
+from homeassistant.core import Context, State, split_entity_id
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from custom_components.resume_state.config import (
@@ -71,6 +71,9 @@ class ResumeStateButton(ButtonEntity):
             CONF_THROTTLE, CONF_THROTTLE_DEFAULT
         )
 
+        # Restore state as the 'Resume Stete' user.
+        user_id: str | None = self.hass.data[DOMAIN].get("user_id")
+
         # Isolate failures per entity: one entity failing to restore should not
         # abort the others, and the snapshot is always cleared afterwards so the
         # timestamp sensor and status sensor never disagree.
@@ -88,7 +91,10 @@ class ResumeStateButton(ButtonEntity):
                     _LOGGER.warning("Entity %s is not yet supported", entity_id)
                     continue
 
-                await resumable_entity.resume(self.hass)
+                # A fresh context per entity keeps each restore an independent,
+                # attributed logbook entry instead of one grouped action.
+                context = Context(user_id=user_id)
+                await resumable_entity.resume(self.hass, context)
                 await asyncio.sleep(throttle_ms / 1000)
 
             except Exception:

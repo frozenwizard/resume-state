@@ -33,6 +33,7 @@ async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
         assert hass.data[DOMAIN]["pressed_at"] is None
         assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
         assert hass.data[DOMAIN]["enabled"] is True
+        assert hass.data[DOMAIN]["user_id"] is not None
 
         assert mock_load_platform.call_count == 3
         calls = mock_load_platform.call_args_list
