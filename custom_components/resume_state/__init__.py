@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from homeassistant.auth.models import User
 from homeassistant.helpers.discovery import async_load_platform
 
 from .config import CONF_ENTITIES, CONF_THROTTLE, CONFIG_SCHEMA
@@ -14,6 +13,7 @@ from .user import async_get_or_create_user
 
 if TYPE_CHECKING:
     from homeassistant import core
+    from homeassistant.auth.models import User
 
 from .const import DOMAIN
 

@@ -12,9 +12,7 @@ if TYPE_CHECKING:
 
 
 async def async_get_or_create_user(hass: HomeAssistant) -> User:
-    """
-    Return the integration's system user, creating it once if absent.
-    """
+    """Return the integration's system user, creating it once if absent."""
     for user in await hass.auth.async_get_users():
         # TODO(frozenwizard): match a persisted id, not the name, once off YAML.
         if user.system_generated and user.name == INTEGRATION_USER_NAME:
