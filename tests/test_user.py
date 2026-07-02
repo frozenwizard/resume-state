@@ -2,6 +2,8 @@
 
 from typing import TYPE_CHECKING
 
+from homeassistant.auth.permissions.const import POLICY_CONTROL
+
 from custom_components.resume_state.const import INTEGRATION_USER_NAME
 from custom_components.resume_state.user import async_get_or_create_user
 
@@ -10,11 +12,15 @@ if TYPE_CHECKING:
 
 
 async def test_get_or_create_user_creates_system_user(hass: HomeAssistant) -> None:
-    """The helper creates a named, system-generated user."""
+    """The helper creates a named, non-admin user that can control entities."""
     user = await async_get_or_create_user(hass)
 
     assert user.name == INTEGRATION_USER_NAME
     assert user.system_generated is True
+    # Not a full admin, but allowed to control entities so restore service
+    # calls aren't rejected as Unauthorized.
+    assert user.is_admin is False
+    assert user.permissions.check_entity("light.any", POLICY_CONTROL)
 
 
 async def test_get_or_create_user_is_idempotent(hass: HomeAssistant) -> None:
