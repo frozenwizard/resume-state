@@ -72,7 +72,7 @@ class ResumeStateButton(ButtonEntity):
         )
 
         # Restore state as the 'Resume Stete' user.
-        user_id: str | None = self.hass.data[DOMAIN].get("user_id")
+        user_id: str = self.hass.data[DOMAIN].get("user_id")
 
         # Isolate failures per entity: one entity failing to restore should not
         # abort the others, and the snapshot is always cleared afterwards so the
