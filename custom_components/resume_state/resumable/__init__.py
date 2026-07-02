@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from homeassistant.core import split_entity_id
 
 from custom_components.resume_state import const
+from custom_components.resume_state.resumable.resumable_fan import ResumableFan
 from custom_components.resume_state.resumable.resumable_light import ResumableLight
 
 if TYPE_CHECKING:
@@ -21,6 +22,8 @@ def build_resumable_entity(
     """Build a resumable entity from a previous state."""
     domain, _ = split_entity_id(entity_id)
     match domain:
+        case const.FAN_DOMAIN:
+            return ResumableFan(entity_id, previous_state)
         case const.LIGHT_DOMAIN:
             return ResumableLight(entity_id, previous_state)
         case _:
