@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
 from homeassistant.core import HomeAssistant, State
 from homeassistant.util import dt as dt_util
@@ -230,6 +231,154 @@ async def test_resume_skip_if_matches_rgb(
                 {"color_mode": "rgb", "rgb_color": (255, 0, 0), "brightness": 100},
             )
         ]
+    }
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not turn_on
+    assert not turn_off
+
+
+async def test_resume_fan_off(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming a fan to the 'off' state."""
+    entity_id = "fan.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, FAN_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id}
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert hass.data[DOMAIN]["pressed_at"] is None
+
+
+async def test_resume_fan_on_with_percentage(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming a fan to 'on' with a percentage."""
+    entity_id = "fan.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "off")
+    calls = async_mock_service(hass, FAN_DOMAIN, "turn_on")
+    historical_states = {
+        entity_id: [State(entity_id, "on", {"percentage": 50, "preset_mode": None})]
+    }
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id, "percentage": 50}
+
+
+async def test_resume_fan_preset_mode_sends_only_preset(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """
+    Restore a fan in a preset mode with preset_mode only, not percentage.
+
+    A fan running in a preset mode still reports a ``percentage`` alongside
+    it; how ``fan.turn_on`` reconciles both at once is integration-defined,
+    so only the preset must be replayed.
+    """
+    entity_id = "fan.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "off")
+    calls = async_mock_service(hass, FAN_DOMAIN, "turn_on")
+    historical_states = {
+        entity_id: [State(entity_id, "on", {"percentage": 33, "preset_mode": "auto"})]
+    }
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id, "preset_mode": "auto"}
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+
+
+async def test_resume_fan_skip_if_matches(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test that we skip resuming a fan if the state already matches."""
+    entity_id = "fan.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "on", {"percentage": 50})
+    turn_on = async_mock_service(hass, FAN_DOMAIN, "turn_on")
+    turn_off = async_mock_service(hass, FAN_DOMAIN, "turn_off")
+    historical_states = {
+        entity_id: [State(entity_id, "on", {"percentage": 50, "preset_mode": None})]
     }
 
     with (
