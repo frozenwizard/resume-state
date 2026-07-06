@@ -4,7 +4,9 @@ from typing import Any, ClassVar
 
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 
-from custom_components.resume_state.resumable.resumable_toggle import ResumableToggle
+from custom_components.resume_state.resumable.resumable_attribute_toggle import (
+    ResumableAttributeToggle,
+)
 
 # The single color attribute to replay to light.turn_on for each color_mode.
 # HA reports every color representation at once, but turn_on accepts only one,
@@ -19,7 +21,7 @@ COLOR_MODE_ATTR: dict[str, str] = {
 }
 
 
-class ResumableLight(ResumableToggle):
+class ResumableLight(ResumableAttributeToggle):
     """A light entity that is resumable."""
 
     domain: ClassVar[str] = LIGHT_DOMAIN

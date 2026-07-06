@@ -6,7 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
+from homeassistant.components.input_boolean import DOMAIN as INPUT_BOOLEAN_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.core import HomeAssistant, State
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_mock_service
@@ -397,6 +399,173 @@ async def test_resume_fan_skip_if_matches(
     assert not turn_off
 
 
+async def test_resume_switch_on(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming a switch to the 'on' state."""
+    entity_id = "switch.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "off")
+    calls = async_mock_service(hass, SWITCH_DOMAIN, "turn_on")
+    historical_states = {entity_id: [State(entity_id, "on")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id}
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+
+
+async def test_resume_switch_off(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming a switch to the 'off' state."""
+    entity_id = "switch.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, SWITCH_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id}
+
+
+async def test_resume_switch_skip_if_matches(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test that we skip resuming a switch if the state already matches."""
+    entity_id = "switch.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "on")
+    turn_on = async_mock_service(hass, SWITCH_DOMAIN, "turn_on")
+    turn_off = async_mock_service(hass, SWITCH_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "on")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not turn_on
+    assert not turn_off
+
+
+async def test_resume_input_boolean_on(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming an input boolean to the 'on' state."""
+    entity_id = "input_boolean.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "off")
+    calls = async_mock_service(hass, INPUT_BOOLEAN_DOMAIN, "turn_on")
+    historical_states = {entity_id: [State(entity_id, "on")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id}
+
+
+async def test_resume_input_boolean_off(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming an input boolean to the 'off' state."""
+    entity_id = "input_boolean.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, INPUT_BOOLEAN_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id}
+
+
 async def test_resume_skip_unavailable(
     hass: HomeAssistant,
     resume_button: ResumeStateButton,
@@ -621,7 +790,7 @@ async def test_resume_unsupported_domain(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
     """Test when an unsupported domain is in the config."""
-    entity_id = "switch.test"
+    entity_id = "climate.test"
     resume_at = dt_util.utcnow()
 
     hass.data[DOMAIN] = {
