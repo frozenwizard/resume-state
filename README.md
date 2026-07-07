@@ -9,3 +9,5 @@ Documentation should go here.
   direction and oscillation is not supported.
 - **Switch** — restores on/off.
 - **Input boolean** — restores on/off.
+- **Select** — restores the selected option.
+- **Input select** — restores the selected option.

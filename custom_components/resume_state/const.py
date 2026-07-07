@@ -6,13 +6,11 @@ SIGNAL_UPDATE_RESUME_STATE = f"{DOMAIN}_update_state"
 # Integration's system user name
 INTEGRATION_USER_NAME = "Resume State"
 
+# Supported entity domains are derived from the resumable dispatch table in
+# ``resumable`` (``SUPPORTED_DOMAINS``) so the two can never drift apart.
 FAN_DOMAIN = "fan"
 INPUT_BOOLEAN_DOMAIN = "input_boolean"
+INPUT_SELECT_DOMAIN = "input_select"
 LIGHT_DOMAIN = "light"
+SELECT_DOMAIN = "select"
 SWITCH_DOMAIN = "switch"
-SUPPORTED_DOMAINS: set[str] = {
-    FAN_DOMAIN,
-    INPUT_BOOLEAN_DOMAIN,
-    LIGHT_DOMAIN,
-    SWITCH_DOMAIN,
-}

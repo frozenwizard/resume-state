@@ -7,7 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
 from homeassistant.components.input_boolean import DOMAIN as INPUT_BOOLEAN_DOMAIN
+from homeassistant.components.input_select import DOMAIN as INPUT_SELECT_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
+from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.core import HomeAssistant, State
 from homeassistant.util import dt as dt_util
@@ -564,6 +566,228 @@ async def test_resume_input_boolean_off(
 
     assert len(calls) == 1
     assert calls[0].data == {"entity_id": entity_id}
+
+
+async def test_resume_select_option(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming a select to its previously selected option."""
+    entity_id = "select.test"
+    resume_at = dt_util.utcnow()
+    options = ["cool", "heat", "off"]
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "cool", {"options": options})
+    calls = async_mock_service(hass, SELECT_DOMAIN, "select_option")
+    historical_states = {entity_id: [State(entity_id, "heat", {"options": options})]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id, "option": "heat"}
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert hass.data[DOMAIN]["pressed_at"] is None
+
+
+async def test_resume_input_select_option(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test resuming an input select to its previously selected option."""
+    entity_id = "input_select.test"
+    resume_at = dt_util.utcnow()
+    options = ["morning", "day", "night"]
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "day", {"options": options})
+    calls = async_mock_service(hass, INPUT_SELECT_DOMAIN, "select_option")
+    historical_states = {entity_id: [State(entity_id, "night", {"options": options})]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].data == {"entity_id": entity_id, "option": "night"}
+
+
+async def test_resume_select_skip_if_matches(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Test that we skip resuming a select if the option already matches."""
+    entity_id = "select.test"
+    resume_at = dt_util.utcnow()
+    options = ["cool", "heat", "off"]
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "heat", {"options": options})
+    calls = async_mock_service(hass, SELECT_DOMAIN, "select_option")
+    historical_states = {entity_id: [State(entity_id, "heat", {"options": options})]}
+
+    with (
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not calls
+
+
+async def test_resume_select_skip_if_option_unavailable(
+    hass: HomeAssistant,
+    resume_button: ResumeStateButton,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A recorded option no longer offered is skipped, not errored."""
+    entity_id = "select.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    # "heat" was recorded but the entity no longer offers it: select_option
+    # would raise, so we must skip gracefully instead of failing the batch.
+    hass.states.async_set(entity_id, "cool", {"options": ["cool", "off"]})
+    calls = async_mock_service(hass, SELECT_DOMAIN, "select_option")
+    historical_states = {
+        entity_id: [State(entity_id, "heat", {"options": ["cool", "heat", "off"]})]
+    }
+
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not calls
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert "option heat is no longer available" in caplog.text
+
+
+async def test_resume_select_skip_if_entity_reports_no_options(
+    hass: HomeAssistant,
+    resume_button: ResumeStateButton,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A select whose live entity is unavailable (no options) is skipped."""
+    entity_id = "select.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    # The live entity is unavailable, so it exposes no `options` attribute and
+    # cannot accept select_option; attempting it would raise and error the
+    # batch, so the recorded option must be skipped instead.
+    hass.states.async_set(entity_id, "unavailable")
+    calls = async_mock_service(hass, SELECT_DOMAIN, "select_option")
+    historical_states = {
+        entity_id: [State(entity_id, "heat", {"options": ["cool", "heat", "off"]})]
+    }
+
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not calls
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert "reports no options" in caplog.text
+
+
+async def test_resume_select_skip_unavailable(
+    hass: HomeAssistant,
+    resume_button: ResumeStateButton,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test that we skip resuming a select if historical state was unavailable."""
+    entity_id = "select.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set(entity_id, "cool", {"options": ["cool", "heat"]})
+    calls = async_mock_service(hass, SELECT_DOMAIN, "select_option")
+    historical_states = {entity_id: [State(entity_id, "unavailable")]}
+
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert not calls
+    assert "historical state was unavailable" in caplog.text
 
 
 async def test_resume_skip_unavailable(

@@ -7,7 +7,11 @@ from custom_components.resume_state.resumable.resumable_fan import ResumableFan
 from custom_components.resume_state.resumable.resumable_input_boolean import (
     ResumableInputBoolean,
 )
+from custom_components.resume_state.resumable.resumable_input_select import (
+    ResumableInputSelect,
+)
 from custom_components.resume_state.resumable.resumable_light import ResumableLight
+from custom_components.resume_state.resumable.resumable_select import ResumableSelect
 from custom_components.resume_state.resumable.resumable_switch import ResumableSwitch
 
 
@@ -59,3 +63,23 @@ def test_build_resumable_entity_input_boolean() -> None:
     entity = build_resumable_entity(entity_id, state)
 
     assert isinstance(entity, ResumableInputBoolean)
+
+
+def test_build_resumable_entity_select() -> None:
+    """Test build_resumable_entity with a select."""
+    entity_id = "select.test"
+    state = State(entity_id, "cool")
+
+    entity = build_resumable_entity(entity_id, state)
+
+    assert isinstance(entity, ResumableSelect)
+
+
+def test_build_resumable_entity_input_select() -> None:
+    """Test build_resumable_entity with an input select."""
+    entity_id = "input_select.test"
+    state = State(entity_id, "cool")
+
+    entity = build_resumable_entity(entity_id, state)
+
+    assert isinstance(entity, ResumableInputSelect)
