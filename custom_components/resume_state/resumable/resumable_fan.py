@@ -4,10 +4,12 @@ from typing import Any, ClassVar
 
 from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
 
-from custom_components.resume_state.resumable.resumable_toggle import ResumableToggle
+from custom_components.resume_state.resumable.resumable_attribute_toggle import (
+    ResumableAttributeToggle,
+)
 
 
-class ResumableFan(ResumableToggle):
+class ResumableFan(ResumableAttributeToggle):
     """
     A fan entity that is resumable.
 

@@ -7,3 +7,5 @@ Documentation should go here.
 - **Light** — restores on/off, brightness, effect, and color.
 - **Fan** — restores on/off, speed percentage, and preset mode. Restoring
   direction and oscillation is not supported.
+- **Switch** — restores on/off.
+- **Input boolean** — restores on/off.
