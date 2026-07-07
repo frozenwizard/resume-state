@@ -21,9 +21,11 @@ from custom_components.resume_state.config import (
 from custom_components.resume_state.const import (
     DOMAIN,
     SIGNAL_UPDATE_RESUME_STATE,
-    SUPPORTED_DOMAINS,
 )
-from custom_components.resume_state.resumable import build_resumable_entity
+from custom_components.resume_state.resumable import (
+    SUPPORTED_DOMAINS,
+    build_resumable_entity,
+)
 from custom_components.resume_state.sensor import ResumeStatus
 
 if TYPE_CHECKING:
