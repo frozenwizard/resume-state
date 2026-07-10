@@ -1,21 +1,20 @@
 """Tests for setup of the switch platform."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from custom_components.resume_state.const import DOMAIN
-from custom_components.resume_state.switch import async_setup_platform
+from custom_components.resume_state.switch import async_setup_entry
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-async def test_switch_async_setup_platform(hass: HomeAssistant) -> None:
-    """Test setting up the switch platform."""
+async def test_switch_async_setup_entry(hass: HomeAssistant) -> None:
+    """Test setting up the switch platform from a config entry."""
     mock_async_add_entities = MagicMock()
-    config: dict[str, Any] = {}
 
-    await async_setup_platform(hass, config, mock_async_add_entities)
+    await async_setup_entry(hass, MagicMock(), mock_async_add_entities)
 
     mock_async_add_entities.assert_called_once()
     entities_added = mock_async_add_entities.call_args[0][0]

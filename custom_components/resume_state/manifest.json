@@ -4,12 +4,13 @@
   "codeowners": [
     "@frozenwizard"
   ],
-  "config_flow": false,
+  "config_flow": true,
   "dependencies": [
     "recorder"
   ],
   "documentation": "https://github.com/frozenwizard/resume-state",
   "iot_class": "assumed_state",
   "issue_tracker": "https://github.com/frozenwizard/resume-state/issues",
+  "single_config_entry": true,
   "version": "0.0.1"
 }

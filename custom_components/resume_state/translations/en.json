@@ -1,4 +1,42 @@
 {
+  "config": {
+    "step": {
+      "user": {
+        "title": "Resume State",
+        "description": "Pick the entities to snapshot and resume.",
+        "data": {
+          "entities": "Entities",
+          "throttle": "Throttle"
+        },
+        "data_description": {
+          "entities": "Entities whose state will be stored and resumed.",
+          "throttle": "Milliseconds to wait between resuming each entity."
+        }
+      }
+    },
+    "error": {
+      "no_entities_selected": "Select at least one entity."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Resume State",
+        "description": "Pick the entities to snapshot and resume.",
+        "data": {
+          "entities": "Entities",
+          "throttle": "Throttle"
+        },
+        "data_description": {
+          "entities": "Entities whose state will be stored and resumed.",
+          "throttle": "Milliseconds to wait between resuming each entity."
+        }
+      }
+    },
+    "error": {
+      "no_entities_selected": "Select at least one entity."
+    }
+  },
   "entity": {
     "button": {
       "store_state": {

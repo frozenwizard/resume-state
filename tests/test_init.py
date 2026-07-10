@@ -1,52 +1,76 @@
 """Tests for setup of the Resume State component."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
-from custom_components.resume_state import async_setup
-from custom_components.resume_state.const import DOMAIN
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.resume_state import (
+    PLATFORMS,
+    async_setup_entry,
+    async_unload_entry,
+)
+from custom_components.resume_state.const import CONF_ENTITIES, CONF_THROTTLE, DOMAIN
 from custom_components.resume_state.sensor import ResumeStatus
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
-async def test_async_setup_valid_config(hass: HomeAssistant) -> None:
-    """Test setting up the integration with a valid config."""
-    config: dict[str, Any] = {
-        DOMAIN: {
-            "entities": ["light.test_light"],
-            "throttle": 5,
-        }
-    }
-
-    with patch(
-        "custom_components.resume_state.async_load_platform"
-    ) as mock_load_platform:
-        result = await async_setup(hass, config)
-        await hass.async_block_till_done()
-
-        assert result is True
-        assert DOMAIN in hass.data
-        assert hass.data[DOMAIN]["entities"] == ["light.test_light"]
-        assert hass.data[DOMAIN]["throttle"] == 5
-        assert hass.data[DOMAIN]["pressed_at"] is None
-        assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
-        assert hass.data[DOMAIN]["enabled"] is True
-        assert hass.data[DOMAIN]["user_id"] is not None
-
-        assert mock_load_platform.call_count == 3
-        calls = mock_load_platform.call_args_list
-        platforms = [call[0][1] for call in calls]
-        assert "sensor" in platforms
-        assert "button" in platforms
-        assert "switch" in platforms
+def _mock_entry() -> MockConfigEntry:
+    """Build a config entry as the config flow would create it."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        title="Resume State",
+        data={},
+        options={CONF_ENTITIES: ["light.test_light"], CONF_THROTTLE: 5},
+    )
 
 
-async def test_async_setup_missing_config(hass: HomeAssistant) -> None:
-    """Test setting up the integration with missing config."""
-    config: dict[str, Any] = {}
+async def test_async_setup_entry(hass: HomeAssistant) -> None:
+    """Test setting up a config entry seeds shared state and loads platforms."""
+    entry = _mock_entry()
+    entry.add_to_hass(hass)
 
-    result = await async_setup(hass, config)
-    assert result is False
+    with patch.object(
+        hass.config_entries, "async_forward_entry_setups"
+    ) as mock_forward:
+        assert await async_setup_entry(hass, entry) is True
+
+    assert hass.data[DOMAIN][CONF_ENTITIES] == ["light.test_light"]
+    assert hass.data[DOMAIN][CONF_THROTTLE] == 5
+    assert hass.data[DOMAIN]["pressed_at"] is None
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert hass.data[DOMAIN]["enabled"] is True
+    assert hass.data[DOMAIN]["user_id"] is not None
+
+    mock_forward.assert_awaited_once_with(entry, PLATFORMS)
+
+
+async def test_async_unload_entry(hass: HomeAssistant) -> None:
+    """Test unloading a config entry clears the shared state."""
+    entry = _mock_entry()
+    entry.add_to_hass(hass)
+    hass.data[DOMAIN] = {"status": ResumeStatus.IDLE.value}
+
+    with patch.object(
+        hass.config_entries, "async_unload_platforms", return_value=True
+    ) as mock_unload:
+        assert await async_unload_entry(hass, entry) is True
+
     assert DOMAIN not in hass.data
+    mock_unload.assert_awaited_once_with(entry, PLATFORMS)
+
+
+async def test_async_unload_entry_failure_keeps_state(hass: HomeAssistant) -> None:
+    """Test a failed platform unload leaves the shared state in place."""
+    entry = _mock_entry()
+    entry.add_to_hass(hass)
+    hass.data[DOMAIN] = {"status": ResumeStatus.IDLE.value}
+
+    with patch.object(
+        hass.config_entries, "async_unload_platforms", return_value=False
+    ):
+        assert await async_unload_entry(hass, entry) is False
+
+    assert DOMAIN in hass.data
