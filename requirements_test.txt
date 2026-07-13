@@ -1,4 +1,4 @@
 pytest
 pytest-asyncio
-pytest-homeassistant-custom-component==0.13.341
+pytest-homeassistant-custom-component==0.13.346
 pytest-cov
