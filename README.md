@@ -6,7 +6,7 @@ A Home Assistant integration that snapshots the state of your chosen entities at
 restores them to that snapshot later.
 
 Press **Store** before something changes your lights, fans, or switches and press **Resume** afterwards to put
-everything back exactly the way it was, including  attributes like brightness, color, and fan speed. State history is 
+everything back exactly the way it was, including attributes like brightness, color, and fan speed. State history is
 read from Home Assistant's recorder, so nothing needs to be copied up front; the snapshot is just an instant in time.
 
 ## How it works
