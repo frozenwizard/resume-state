@@ -16,8 +16,7 @@ from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_mock_service
 
 from custom_components.resume_state.button import ResumeStateButton
-from custom_components.resume_state.config import CONF_ENTITIES, CONF_THROTTLE
-from custom_components.resume_state.const import DOMAIN
+from custom_components.resume_state.const import CONF_ENTITIES, CONF_THROTTLE, DOMAIN
 from custom_components.resume_state.sensor import ResumeStatus, ResumeStatusSensor
 
 if TYPE_CHECKING:

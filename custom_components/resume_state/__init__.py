@@ -2,50 +2,47 @@
 
 from __future__ import annotations
 
-import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from homeassistant.helpers.discovery import async_load_platform
+from homeassistant.const import Platform
 
-from .config import CONF_ENTITIES, CONF_THROTTLE, CONFIG_SCHEMA
+from .const import CONF_ENTITIES, CONF_THROTTLE, CONF_THROTTLE_DEFAULT, DOMAIN
 from .sensor import ResumeStatus
 from .user import async_get_or_create_user
 
 if TYPE_CHECKING:
-    from homeassistant import core
     from homeassistant.auth.models import User
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+__all__ = ["async_setup_entry", "async_unload_entry"]
 
-__all__ = ["CONFIG_SCHEMA", "async_setup"]
-
-_LOGGER = logging.getLogger(__name__)
+PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH]
 
 
-async def async_setup(hass: core.HomeAssistant, _config: dict[str, Any]) -> bool:
-    """Set up the Resume State component."""
-    conf = _config.get(DOMAIN)
-
-    if conf is None:
-        _LOGGER.error("No configuration found for Resume State")
-        return False
-
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Resume State from a config entry."""
     # Act as a dedicated system user so restored changes are attributed to the
     # integration in the logbook, distinct from the user's own actions.
     user: User = await async_get_or_create_user(hass)
 
-    hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
-        CONF_ENTITIES: conf.get(CONF_ENTITIES),
-        CONF_THROTTLE: conf.get(CONF_THROTTLE),
+        CONF_ENTITIES: entry.options.get(CONF_ENTITIES, []),
+        CONF_THROTTLE: entry.options.get(CONF_THROTTLE, CONF_THROTTLE_DEFAULT),
         "pressed_at": None,
         "status": ResumeStatus.IDLE.value,
         "enabled": True,
         "user_id": user.id,
     }
 
-    hass.async_create_task(async_load_platform(hass, "sensor", DOMAIN, {}, _config))
-    hass.async_create_task(async_load_platform(hass, "button", DOMAIN, {}, _config))
-    hass.async_create_task(async_load_platform(hass, "switch", DOMAIN, {}, _config))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a Resume State config entry."""
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unload_ok:
+        hass.data.pop(DOMAIN, None)
+    return unload_ok

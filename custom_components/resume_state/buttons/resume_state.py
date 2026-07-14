@@ -13,12 +13,10 @@ from homeassistant.components.recorder.history import state_changes_during_perio
 from homeassistant.core import Context, State, split_entity_id
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.resume_state.config import (
+from custom_components.resume_state.const import (
     CONF_ENTITIES,
     CONF_THROTTLE,
     CONF_THROTTLE_DEFAULT,
-)
-from custom_components.resume_state.const import (
     DOMAIN,
     SIGNAL_UPDATE_RESUME_STATE,
 )
