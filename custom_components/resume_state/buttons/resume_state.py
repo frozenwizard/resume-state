@@ -44,10 +44,10 @@ class ResumeStateButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        _LOGGER.debug("Begin resuming state")
+        _LOGGER.debug("Resume State Button pressed")
 
         if not self.hass.data[DOMAIN].get("enabled", True):
-            _LOGGER.warning("Resume state is disabled")
+            _LOGGER.warning("Resume state is disabled, skip resuming state")
             self._set_status(ResumeStatus.DISABLED)
             return
 
@@ -61,7 +61,7 @@ class ResumeStateButton(ButtonEntity):
         if not filtered_entities_to_resume:
             _LOGGER.warning("No entities to resume")
             self.hass.data[DOMAIN]["pressed_at"] = None
-            self._set_status(ResumeStatus.IDLE)
+            self._set_status(ResumeStatus.ERRORED)
             return
 
         self._set_status(ResumeStatus.RESUMING)

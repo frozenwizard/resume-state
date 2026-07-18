@@ -44,7 +44,7 @@ class ResumableSelectBase(ResumableEntity):
 
         # Skip the service call if the entity already has the target option.
         if current_state is not None and current_state.state == option:
-            _LOGGER.debug("State for %s already matches", self.entity_id)
+            _LOGGER.debug("State for %s already matches, skip actual resuming", self.entity_id)
             return
 
         # Only proceed if the live entity can currently accept the option;

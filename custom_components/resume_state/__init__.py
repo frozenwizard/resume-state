@@ -22,7 +22,7 @@ PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.SENSOR, Platform.SWITCH]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Resume State from a config entry."""
-    # Act as a dedicated system user so restored changes are attributed to the
+    # Act as a dedicated syste m user so restored changes are attributed to the
     # integration in the logbook, distinct from the user's own actions.
     user: User = await async_get_or_create_user(hass)
 
