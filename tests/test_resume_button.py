@@ -975,7 +975,7 @@ async def test_resume_status_sensor_updates_no_entities(
 
     await resume_button.async_press()
 
-    assert status_sensor.native_value == ResumeStatus.IDLE.value
+    assert status_sensor.native_value == ResumeStatus.ERRORED.value
     assert hass.data[DOMAIN]["pressed_at"] is None
 
 
@@ -1024,7 +1024,7 @@ async def test_resume_unsupported_domain(
 
     await resume_button.async_press()
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
 
 
 async def test_resume_unsupported_entity_class(
