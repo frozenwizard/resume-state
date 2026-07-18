@@ -23,7 +23,7 @@ class ClearStateButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        _LOGGER.info("Clearing State")
+        _LOGGER.debug("Clearing state")
         self.hass.data[DOMAIN]["pressed_at"] = None
         # Clearing the snapshot is allowed while disabled
         if self.hass.data[DOMAIN].get("status") != ResumeStatus.DISABLED.value:

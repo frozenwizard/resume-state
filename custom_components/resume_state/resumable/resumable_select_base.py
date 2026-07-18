@@ -38,13 +38,13 @@ class ResumableSelectBase(ResumableEntity):
             return
 
         option = self.previous_state.state
-        _LOGGER.info("Resuming state for %s to %s", self.entity_id, option)
+        _LOGGER.debug("Resuming state for %s to %s", self.entity_id, option)
 
         current_state = hass.states.get(self.entity_id)
 
         # Skip the service call if the entity already has the target option.
         if current_state is not None and current_state.state == option:
-            _LOGGER.info("State for %s already matches", self.entity_id)
+            _LOGGER.debug("State for %s already matches", self.entity_id)
             return
 
         # Only proceed if the live entity can currently accept the option;

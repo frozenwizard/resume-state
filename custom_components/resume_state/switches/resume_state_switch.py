@@ -34,12 +34,14 @@ class ResumeStateSwitch(SwitchEntity, RestoreEntity):
         if last_state is not None:
             self._attr_is_on = last_state.state == "on"
         self.hass.data[DOMAIN]["enabled"] = self._attr_is_on
+        _LOGGER.debug("Restored enabled state: %s", self._attr_is_on)
 
         if not self._attr_is_on:
             self.hass.data[DOMAIN]["status"] = ResumeStatus.DISABLED.value
 
     async def async_turn_on(self, **_kwargs: Any) -> None:
         """Enable resuming state and sets status to IDLE."""
+        _LOGGER.debug("Enabling resume state")
         self._attr_is_on = True
         self.hass.data[DOMAIN]["enabled"] = True
         if self.hass.data[DOMAIN].get("status") == ResumeStatus.DISABLED.value:
@@ -49,6 +51,7 @@ class ResumeStateSwitch(SwitchEntity, RestoreEntity):
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
         """Disable resuming state and sets status to DISABLED."""
+        _LOGGER.debug("Disabling resume state")
         self._attr_is_on = False
         self.hass.data[DOMAIN]["enabled"] = False
         self.hass.data[DOMAIN]["status"] = ResumeStatus.DISABLED.value
