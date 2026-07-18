@@ -37,7 +37,7 @@ class ResumableToggle(ResumableEntity):
             )
             return
 
-        _LOGGER.info(
+        _LOGGER.debug(
             "Resuming state for %s to %s", self.entity_id, self.previous_state.state
         )
 
@@ -46,7 +46,7 @@ class ResumableToggle(ResumableEntity):
 
         if self.previous_state.state == "off":
             if current_state and current_state.state == "off":
-                _LOGGER.info("State for %s already matches", self.entity_id)
+                _LOGGER.debug("State for %s already matches", self.entity_id)
                 return
             await hass.services.async_call(
                 domain=self.domain,
@@ -59,7 +59,7 @@ class ResumableToggle(ResumableEntity):
 
         if self.previous_state.state == "on":
             if current_state and self._matches_on(current_state):
-                _LOGGER.info("State for %s already matches", self.entity_id)
+                _LOGGER.debug("State for %s already matches", self.entity_id)
                 return
 
             service_data = self._turn_on_data()

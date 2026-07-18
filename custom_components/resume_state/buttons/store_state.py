@@ -25,7 +25,7 @@ class StoreStateButton(ButtonEntity):
     async def async_press(self) -> None:
         """Handle the button press."""
         pressed_at = dt_util.utcnow()
-        _LOGGER.info("Storing state at %s", pressed_at)
+        _LOGGER.debug("Storing state at %s", pressed_at)
 
         self.hass.data[DOMAIN]["pressed_at"] = pressed_at
         # Storing the snapshot is allowed while disabled
