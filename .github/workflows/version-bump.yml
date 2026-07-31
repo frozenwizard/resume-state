@@ -1,0 +1,80 @@
+name: Version bump
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  bump:
+    name: Auto-bump patch version
+    runs-on: ubuntu-latest
+    # Forks can't be pushed to; those PRs must bump the version manually.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the PR branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          # Commits pushed with the default GITHUB_TOKEN do not trigger CI, which
+          # leaves the bump commit with no checks and blocks auto-merge. Set
+          # VERSION_BUMP_TOKEN (a PAT with contents read/write on this repo) in
+          # both the Actions and Dependabot secret stores.
+          token: ${{ secrets.VERSION_BUMP_TOKEN || github.token }}
+
+      - name: Bump patch version if not already bumped
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          MANIFEST="custom_components/resume_state/manifest.json"
+          BASE_VERSION=$(git show "origin/$BASE_REF:$MANIFEST" | jq -r .version)
+          PR_VERSION=$(jq -r .version "$MANIFEST")
+
+          if [ "$PR_VERSION" != "$BASE_VERSION" ]; then
+            echo "Version already changed ($BASE_VERSION -> $PR_VERSION); nothing to do."
+            exit 0
+          fi
+
+          NEW_VERSION=$(echo "$BASE_VERSION" | awk -F. '{printf "%d.%d.%d", $1, $2, $3 + 1}')
+          jq --arg version "$NEW_VERSION" '.version = $version' "$MANIFEST" > "$MANIFEST.tmp"
+          mv "$MANIFEST.tmp" "$MANIFEST"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Bump version to $NEW_VERSION"
+          git push
+          echo "Bumped version: $BASE_VERSION -> $NEW_VERSION"
+
+  check:
+    name: Require version bump
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Check manifest version against base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          MANIFEST="custom_components/resume_state/manifest.json"
+          BASE_VERSION=$(git show "origin/$BASE_REF:$MANIFEST" | jq -r .version)
+          PR_VERSION=$(jq -r .version "$MANIFEST")
+
+          if [ "$BASE_VERSION" = "$PR_VERSION" ]; then
+            echo "::error file=$MANIFEST::Version is still $PR_VERSION. Every merge to $BASE_REF needs a version bump; the auto-bump job should handle this, so check its logs."
+            exit 1
+          fi
+
+          if [ "$(printf '%s\n%s\n' "$BASE_VERSION" "$PR_VERSION" | sort -V | tail -n 1)" != "$PR_VERSION" ]; then
+            echo "::error file=$MANIFEST::Version $PR_VERSION is lower than $BASE_VERSION on $BASE_REF."
+            exit 1
+          fi
+
+          echo "Version bumped: $BASE_VERSION -> $PR_VERSION"
