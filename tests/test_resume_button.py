@@ -57,11 +57,11 @@ async def test_resume_light_off(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -92,11 +92,11 @@ async def test_resume_light_on_with_brightness(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -126,11 +126,11 @@ async def test_resume_skip_if_matches(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -180,11 +180,11 @@ async def test_resume_color_temp_light_sends_only_color_temp(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -238,11 +238,11 @@ async def test_resume_skip_if_matches_rgb(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -271,11 +271,11 @@ async def test_resume_fan_off(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -308,11 +308,11 @@ async def test_resume_fan_on_with_percentage(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -349,11 +349,11 @@ async def test_resume_fan_preset_mode_sends_only_preset(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -386,11 +386,11 @@ async def test_resume_fan_skip_if_matches(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -419,11 +419,11 @@ async def test_resume_switch_on(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -453,11 +453,11 @@ async def test_resume_switch_off(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -487,11 +487,11 @@ async def test_resume_switch_skip_if_matches(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -520,11 +520,11 @@ async def test_resume_input_boolean_on(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -553,11 +553,11 @@ async def test_resume_input_boolean_off(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -587,11 +587,11 @@ async def test_resume_select_option(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -623,11 +623,11 @@ async def test_resume_input_select_option(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -657,11 +657,11 @@ async def test_resume_select_skip_if_matches(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -696,11 +696,11 @@ async def test_resume_select_skip_if_option_unavailable(
     with (
         caplog.at_level(logging.WARNING),
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -738,11 +738,11 @@ async def test_resume_select_skip_if_entity_reports_no_options(
     with (
         caplog.at_level(logging.WARNING),
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -775,11 +775,11 @@ async def test_resume_select_skip_unavailable(
     with (
         caplog.at_level(logging.WARNING),
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -814,11 +814,11 @@ async def test_resume_skip_unavailable(
     with (
         caplog.at_level(logging.WARNING),
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -878,11 +878,11 @@ async def test_resume_recorder_called_with_correct_args(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=recorder,
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             side_effect=fake_scdp,
         ),
     ):
@@ -941,11 +941,11 @@ async def test_resume_status_sensor_updates(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -996,11 +996,11 @@ async def test_resume_no_history(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -1043,15 +1043,15 @@ async def test_resume_unsupported_entity_class(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.build_resumable_entity",
+            "custom_components.resume_state.snapshot.build_resumable_entity",
             return_value=None,
         ),
     ):
@@ -1079,15 +1079,15 @@ async def test_resume_exception_during_restore(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.build_resumable_entity",
+            "custom_components.resume_state.snapshot.build_resumable_entity",
             return_value=mock_entity,
         ),
     ):
@@ -1115,11 +1115,11 @@ async def test_resume_light_unhandled_state(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -1171,15 +1171,15 @@ async def test_resume_throttle_waits_after_each_resume(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.asyncio.sleep",
+            "custom_components.resume_state.snapshot.asyncio.sleep",
             new_callable=AsyncMock,
         ) as mock_sleep,
     ):
@@ -1212,15 +1212,15 @@ async def test_resume_throttle_only_waits_after_resumed_entities(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.asyncio.sleep",
+            "custom_components.resume_state.snapshot.asyncio.sleep",
             new_callable=AsyncMock,
         ) as mock_sleep,
     ):
@@ -1251,11 +1251,11 @@ async def test_resume_runs_as_integration_user(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):
@@ -1288,11 +1288,11 @@ async def test_resume_uses_a_fresh_context_per_entity(
 
     with (
         patch(
-            "custom_components.resume_state.buttons.resume_state.get_instance",
+            "custom_components.resume_state.snapshot.get_instance",
             return_value=_mock_recorder(historical_states),
         ),
         patch(
-            "custom_components.resume_state.buttons.resume_state.state_changes_during_period",
+            "custom_components.resume_state.snapshot.state_changes_during_period",
             return_value=historical_states,
         ),
     ):

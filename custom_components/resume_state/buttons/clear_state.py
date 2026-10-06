@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-import logging
-
 from homeassistant.components.button import ButtonEntity
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from custom_components.resume_state.const import DOMAIN, SIGNAL_UPDATE_RESUME_STATE
-from custom_components.resume_state.sensor import ResumeStatus
-
-_LOGGER = logging.getLogger(__name__)
+from custom_components.resume_state.snapshot import async_clear_snapshot
 
 
 class ClearStateButton(ButtonEntity):
@@ -23,9 +17,4 @@ class ClearStateButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        _LOGGER.debug("Clearing state")
-        self.hass.data[DOMAIN]["pressed_at"] = None
-        # Clearing the snapshot is allowed while disabled
-        if self.hass.data[DOMAIN].get("status") != ResumeStatus.DISABLED.value:
-            self.hass.data[DOMAIN]["status"] = ResumeStatus.IDLE.value
-        async_dispatcher_send(self.hass, SIGNAL_UPDATE_RESUME_STATE)
+        async_clear_snapshot(self.hass)
