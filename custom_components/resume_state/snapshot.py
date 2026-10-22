@@ -61,13 +61,19 @@ def async_clear_snapshot(hass: HomeAssistant) -> None:
 
 
 async def async_resume_snapshot(
-    hass: HomeAssistant, resume_at: datetime | None = None
+    hass: HomeAssistant,
+    resume_at: datetime | None = None,
+    *,
+    parent_context: Context | None = None,
 ) -> None:
     """
     Restore each configured entity to its state at the snapshot instant.
 
-    Passing ``resume_at`` restores to that instant instead and leaves any
-    stored snapshot in place; otherwise the stored snapshot is consumed.
+    Passing ``resume_at`` restores to that instant instead of the stored
+    snapshot. Either way the stored snapshot is consumed, so nothing is stored
+    once a resume has run.
+    ``parent_context`` is the context of whatever triggered the resume (a
+    button press or action call) and becomes the parent of each restore.
     """
     _LOGGER.debug("Resuming state")
 
@@ -76,10 +82,12 @@ async def async_resume_snapshot(
         _async_set_status(hass, ResumeStatus.DISABLED)
         return
 
-    # An explicit instant overrides the stored snapshot for this resume only.
-    consume_snapshot = resume_at is None
+    stored_at: datetime | None = hass.data[DOMAIN].get("pressed_at")
+    # An explicit instant (the resume action's datetime) replaces the stored
+    # snapshot as the instant to resume to.
+    explicit = resume_at is not None
     if resume_at is None:
-        resume_at = hass.data[DOMAIN].get("pressed_at")
+        resume_at = stored_at
     if resume_at is None:
         _LOGGER.warning("Nothing to resume: no state has been stored")
         _async_set_status(hass, ResumeStatus.ERRORED)
@@ -88,8 +96,7 @@ async def async_resume_snapshot(
     filtered_entities_to_resume = _filtered_entities(hass)
     if not filtered_entities_to_resume:
         _LOGGER.warning("No entities to resume")
-        if consume_snapshot:
-            hass.data[DOMAIN]["pressed_at"] = None
+        hass.data[DOMAIN]["pressed_at"] = None
         _async_set_status(hass, ResumeStatus.ERRORED)
         return
 
@@ -102,8 +109,8 @@ async def async_resume_snapshot(
     user_id: str = hass.data[DOMAIN].get("user_id")
 
     # Isolate failures per entity: one entity failing to restore should not
-    # abort the others, and a consumed snapshot is always cleared afterwards
-    # so the timestamp sensor and status sensor never disagree.
+    # abort the others, and the snapshot is always cleared afterwards so the
+    # timestamp sensor and status sensor never disagree.
     had_error = False
     for entity_id in filtered_entities_to_resume:
         try:
@@ -121,8 +128,12 @@ async def async_resume_snapshot(
                 continue
 
             # A fresh context per entity keeps each restore an independent,
-            # attributed logbook entry instead of one grouped action.
-            context = Context(user_id=user_id)
+            # attributed logbook entry instead of one grouped action; the
+            # parent links it back to the automation or user that resumed.
+            context = Context(
+                user_id=user_id,
+                parent_id=parent_context.id if parent_context else None,
+            )
             await resumable_entity.resume(hass, context)
             await asyncio.sleep(throttle_ms / 1000)
 
@@ -130,19 +141,16 @@ async def async_resume_snapshot(
             _LOGGER.exception("Failed to resume %s", entity_id)
             had_error = True
 
-    if consume_snapshot:
-        hass.data[DOMAIN]["pressed_at"] = None
-    _async_set_status(hass, _settled_status(hass, had_error=had_error))
-
-
-def _settled_status(hass: HomeAssistant, *, had_error: bool) -> ResumeStatus:
-    """Return the status to settle on once a resume has run."""
-    if had_error:
-        return ResumeStatus.ERRORED
-    if hass.data[DOMAIN].get("pressed_at") is not None:
-        # An explicit resume_at left the stored snapshot ready to resume.
-        return ResumeStatus.STORED
-    return ResumeStatus.IDLE
+    if had_error and explicit and stored_at is not None:
+        # The failed resume was to a different instant, so record the snapshot
+        # being discarded; it can't be recovered from anywhere else.
+        _LOGGER.warning(
+            "Resume to %s failed; discarding the snapshot stored at %s",
+            resume_at,
+            stored_at,
+        )
+    hass.data[DOMAIN]["pressed_at"] = None
+    _async_set_status(hass, ResumeStatus.ERRORED if had_error else ResumeStatus.IDLE)
 
 
 @callback

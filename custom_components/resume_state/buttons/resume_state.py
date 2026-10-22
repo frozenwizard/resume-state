@@ -17,4 +17,4 @@ class ResumeStateButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        await async_resume_snapshot(self.hass)
+        await async_resume_snapshot(self.hass, parent_context=self._context)

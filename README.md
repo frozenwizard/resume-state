@@ -33,8 +33,9 @@ Each button has a matching action, so automations and scripts can drive the snap
 - `resume_state.clear` — same as **Clear**.
 
 `resume_state.resume` also takes an optional `datetime` to restore to that moment instead of the stored
-snapshot. The stored snapshot is left in place for a later resume, and a date and time without a time zone is
-read in Home Assistant's time zone. It must be in the past and within your recorder's history.
+snapshot. Like any resume, it clears the stored snapshot afterwards, whether or not it succeeds. A date and
+time without a time zone is read in Home Assistant's time zone. It must be in the past and within your
+recorder's history.
 
 ```yaml
 action: resume_state.resume

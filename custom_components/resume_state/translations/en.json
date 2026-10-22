@@ -81,7 +81,7 @@
       "fields": {
         "datetime": {
           "name": "Date and time",
-          "description": "Resume to the state at this moment instead of the stored snapshot. The stored snapshot is kept."
+          "description": "Resume to the state at this moment instead of the stored snapshot. Like any resume, it clears the stored snapshot afterwards."
         }
       }
     },
