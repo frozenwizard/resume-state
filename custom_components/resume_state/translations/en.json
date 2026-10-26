@@ -69,5 +69,33 @@
         }
       }
     }
+  },
+  "services": {
+    "store": {
+      "name": "Store Home State",
+      "description": "Marks the current moment as the snapshot to resume to later."
+    },
+    "resume": {
+      "name": "Resume Home State",
+      "description": "Restores every configured entity to the state it had when the snapshot was stored.",
+      "fields": {
+        "datetime": {
+          "name": "Date and time",
+          "description": "Resume to the state at this moment instead of the stored snapshot. The stored snapshot is kept."
+        }
+      }
+    },
+    "clear": {
+      "name": "Clear Home State",
+      "description": "Discards the stored snapshot."
+    }
+  },
+  "exceptions": {
+    "not_loaded": {
+      "message": "Resume State is not set up."
+    },
+    "datetime_in_future": {
+      "message": "The date and time to resume to must be in the past."
+    }
   }
 }

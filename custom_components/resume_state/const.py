@@ -8,6 +8,14 @@ CONF_ENTITIES = "entities"
 CONF_THROTTLE = "throttle"
 CONF_THROTTLE_DEFAULT = 0
 
+# Service actions
+SERVICE_STORE = "store"
+SERVICE_RESUME = "resume"
+SERVICE_CLEAR = "clear"
+
+# Service action fields
+ATTR_DATETIME = "datetime"
+
 # Integration's system user name
 INTEGRATION_USER_NAME = "Resume State"
 

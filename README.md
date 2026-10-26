@@ -24,11 +24,31 @@ Restores are issued as a dedicated "Resume State" system user, so every change i
 logbook. A configurable throttle spaces out the restore calls, and a failure on one entity never stops
 the rest of the batch.
 
+## Actions
+
+Each button has a matching action, so automations and scripts can drive the snapshot directly:
+
+- `resume_state.store` — same as **Store**.
+- `resume_state.resume` — same as **Resume**. The action finishes once every entity has been restored.
+- `resume_state.clear` — same as **Clear**.
+
+`resume_state.resume` also takes an optional `datetime` to restore to that moment instead of the stored
+snapshot. The stored snapshot is left in place for a later resume, and a date and time without a time zone is
+read in Home Assistant's time zone. It must be in the past and within your recorder's history.
+
+```yaml
+action: resume_state.resume
+data:
+  datetime: "2026-10-03 18:00:00"
+```
+
+**Enabled** gates the `resume_state.resume` action exactly as it gates the button.
+
 ## Requirements
 
 - The [recorder](https://www.home-assistant.io/integrations/recorder/) integration must be enabled (it is
   by default). Resume State reads historical state from it, so the recorder must retain history covering
-  the moment you pressed **Store**.
+  the moment you resume to: when you pressed **Store**, or the `datetime` passed to the resume action.
 
 ## Installation
 

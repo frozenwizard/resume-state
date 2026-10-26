@@ -14,6 +14,8 @@
 
 - Inclusion in the HACS default store: [hacs/default#9161](https://github.com/hacs/default/pull/9161)
   is open and awaiting review. Until it lands, install via HACS custom repositories.
+- Service actions (`resume_state.store` / `resume` / `clear`) mirroring the buttons, with an optional
+  `datetime` on `resume` to restore to an arbitrary past moment. Ships in the next release.
 
 ## Next
 
@@ -23,5 +25,4 @@
 ## Ideas (no commitment)
 
 - Multiple named snapshots instead of a single stored instant.
-- Service actions (`resume_state.store` / `resume` / `clear`) so automations don't have to press buttons.
 - Be like Battery Notes where it scans automatically for entities to resume.

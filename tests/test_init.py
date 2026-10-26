@@ -7,10 +7,18 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.resume_state import (
     PLATFORMS,
+    async_setup,
     async_setup_entry,
     async_unload_entry,
 )
-from custom_components.resume_state.const import CONF_ENTITIES, CONF_THROTTLE, DOMAIN
+from custom_components.resume_state.const import (
+    CONF_ENTITIES,
+    CONF_THROTTLE,
+    DOMAIN,
+    SERVICE_CLEAR,
+    SERVICE_RESUME,
+    SERVICE_STORE,
+)
 from custom_components.resume_state.sensor import ResumeStatus
 
 if TYPE_CHECKING:
@@ -25,6 +33,14 @@ def _mock_entry() -> MockConfigEntry:
         data={},
         options={CONF_ENTITIES: ["light.test_light"], CONF_THROTTLE: 5},
     )
+
+
+async def test_async_setup_registers_services(hass: HomeAssistant) -> None:
+    """Test integration setup registers the service actions."""
+    assert await async_setup(hass, {}) is True
+
+    for service in (SERVICE_STORE, SERVICE_RESUME, SERVICE_CLEAR):
+        assert hass.services.has_service(DOMAIN, service)
 
 
 async def test_async_setup_entry(hass: HomeAssistant) -> None:
