@@ -87,7 +87,7 @@
     },
     "clear": {
       "name": "Clear Home State",
-      "description": "Discards the stored snapshot."
+      "description": "Discards the stored snapshot. A resume in progress is aborted."
     }
   },
   "exceptions": {
@@ -96,6 +96,9 @@
     },
     "datetime_in_future": {
       "message": "The date and time to resume to must be in the past."
+    },
+    "resume_in_progress": {
+      "message": "A resume is in progress. Wait for it to finish, or clear the snapshot to abort it."
     }
   }
 }

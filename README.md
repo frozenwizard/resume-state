@@ -15,7 +15,7 @@ The integration creates a small set of entities:
 
 - **Store** (button) — marks the current moment as the snapshot instant.
 - **Resume** (button) — restores every configured entity to the state it had at that instant.
-- **Clear** (button) — discards the snapshot.
+- **Clear** (button) — discards the snapshot, aborting a resume in progress.
 - **Status** and **Stored at** (sensors) — show the current state of the cycle.
 - **Enabled** (switch) — gates resume entirely; useful for temporarily pausing automations that press
   the buttons.
@@ -23,6 +23,10 @@ The integration creates a small set of entities:
 Restores are issued as a dedicated "Resume State" system user, so every change is attributed in the
 logbook. A configurable throttle spaces out the restore calls, and a failure on one entity never stops
 the rest of the batch.
+
+Only one resume runs at a time. While it runs, **Store** and **Resume** are rejected with an error, and **Enabled**
+is unavailable until it finishes. **Clear** still works and aborts the resume, so it is the way out if a resume gets
+stuck.
 
 ## Actions
 
