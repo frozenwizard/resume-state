@@ -67,7 +67,7 @@ async def _async_handle_resume(call: ServiceCall) -> None:
                 translation_domain=DOMAIN, translation_key="datetime_in_future"
             )
 
-    await async_resume_snapshot(call.hass, resume_at)
+    await async_resume_snapshot(call.hass, resume_at, parent_context=call.context)
 
 
 @callback
@@ -81,8 +81,9 @@ def _async_handle_clear(call: ServiceCall) -> None:
 def _async_ensure_loaded(hass: HomeAssistant) -> None:
     """Raise unless the config entry holding the snapshot state is loaded."""
     # The actions are registered for the integration's lifetime, but the
-    # snapshot state only exists while the config entry is loaded.
-    if DOMAIN not in hass.data:
+    # snapshot state is only complete once the entry has finished setting up:
+    # hass.data exists earlier, before the enable switch restores `enabled`.
+    if not hass.config_entries.async_loaded_entries(DOMAIN):
         raise ServiceValidationError(
             translation_domain=DOMAIN, translation_key="not_loaded"
         )

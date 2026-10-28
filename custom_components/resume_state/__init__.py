@@ -10,6 +10,7 @@ from homeassistant.helpers import config_validation as cv
 from .const import CONF_ENTITIES, CONF_THROTTLE, CONF_THROTTLE_DEFAULT, DOMAIN
 from .sensor import ResumeStatus
 from .services import async_setup_services
+from .snapshot import async_abort_resume
 from .user import async_get_or_create_user
 
 if TYPE_CHECKING:
@@ -56,6 +57,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a Resume State config entry."""
+    # Stop a resume still in progress even if the unload fails: it would
+    # otherwise outlive the entry, with no loaded entry left to clear it.
+    async_abort_resume(hass)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data.pop(DOMAIN, None)

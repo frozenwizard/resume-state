@@ -1,5 +1,7 @@
 """Tests for the Resume State service actions."""
 
+import asyncio
+import logging
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -7,10 +9,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import voluptuous as vol
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
-from homeassistant.core import HomeAssistant, State
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.core import Context, HomeAssistant, ServiceCall, State
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.util import dt as dt_util
-from pytest_homeassistant_custom_component.common import async_mock_service
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_mock_service,
+)
 
 from custom_components.resume_state.const import (
     ATTR_DATETIME,
@@ -33,6 +39,14 @@ def register_services(hass: HomeAssistant) -> None:
     async_setup_services(hass)
 
 
+@pytest.fixture(autouse=True)
+def loaded_entry(hass: HomeAssistant) -> MockConfigEntry:
+    """Add a loaded config entry, which the actions require."""
+    entry = MockConfigEntry(domain=DOMAIN, state=ConfigEntryState.LOADED)
+    entry.add_to_hass(hass)
+    return entry
+
+
 def _mock_recorder(historical_states: dict) -> MagicMock:
     """Build a recorder mock whose executor job returns historical_states."""
     recorder = MagicMock()
@@ -46,6 +60,43 @@ def _patch_history(past_state: State) -> AbstractContextManager[AsyncMock]:
         "custom_components.resume_state.snapshot._async_historical_state",
         AsyncMock(return_value=past_state),
     )
+
+
+def _patch_history_off() -> AbstractContextManager[AsyncMock]:
+    """Patch the recorder lookup so every entity was off at any instant."""
+    return patch(
+        "custom_components.resume_state.snapshot._async_historical_state",
+        AsyncMock(side_effect=lambda _hass, entity_id, _at: State(entity_id, "off")),
+    )
+
+
+class _StuckTurnOff:
+    """A light.turn_off that hangs until released, to hold a resume mid-way."""
+
+    def __init__(self, hass: HomeAssistant) -> None:
+        """Register the handler in place of light.turn_off."""
+        self.calls: list[ServiceCall] = []
+        self.restoring = asyncio.Event()
+        self.release = asyncio.Event()
+        hass.services.async_register(LIGHT_DOMAIN, "turn_off", self._async_handle)
+
+    async def _async_handle(self, call: ServiceCall) -> None:
+        """Record the call, then wait to be released."""
+        self.calls.append(call)
+        self.restoring.set()
+        await self.release.wait()
+
+
+def _seed_two_lights_to_resume(hass: HomeAssistant) -> None:
+    """Store a snapshot of two lights that are now on."""
+    entities = ["light.one", "light.two"]
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: entities,
+        "pressed_at": dt_util.utcnow(),
+        "status": ResumeStatus.STORED.value,
+    }
+    for entity_id in entities:
+        hass.states.async_set(entity_id, "on")
 
 
 async def test_store_service(hass: HomeAssistant) -> None:
@@ -122,16 +173,52 @@ async def test_resume_service_while_disabled(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.parametrize("service", [SERVICE_STORE, SERVICE_RESUME, SERVICE_CLEAR])
+@pytest.mark.parametrize(
+    "entry_state",
+    [
+        ConfigEntryState.NOT_LOADED,
+        # Mid-setup (e.g. an options reload), hass.data already exists but the
+        # enable switch has not yet restored `enabled`.
+        ConfigEntryState.SETUP_IN_PROGRESS,
+        ConfigEntryState.SETUP_ERROR,
+    ],
+)
 async def test_service_raises_when_not_loaded(
-    hass: HomeAssistant, service: str
+    hass: HomeAssistant,
+    loaded_entry: MockConfigEntry,
+    service: str,
+    entry_state: ConfigEntryState,
 ) -> None:
-    """Each action fails clearly when the config entry is not loaded."""
-    assert DOMAIN not in hass.data
+    """Each action fails clearly unless the config entry is fully loaded."""
+    loaded_entry.mock_state(hass, entry_state)
+    stored_at = dt_util.utcnow() - timedelta(hours=1)
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: ["light.test"],
+        "pressed_at": stored_at,
+        "status": ResumeStatus.STORED.value,
+        "enabled": True,
+    }
 
     with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(DOMAIN, service, blocking=True)
 
     assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "not_loaded"
+    assert hass.data[DOMAIN]["pressed_at"] == stored_at
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
+
+
+@pytest.mark.parametrize("service", [SERVICE_STORE, SERVICE_RESUME, SERVICE_CLEAR])
+async def test_service_raises_when_never_set_up(
+    hass: HomeAssistant, loaded_entry: MockConfigEntry, service: str
+) -> None:
+    """Each action fails clearly when the entry has never set up its state."""
+    loaded_entry.mock_state(hass, ConfigEntryState.NOT_LOADED)
+    assert DOMAIN not in hass.data
+
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(DOMAIN, service, blocking=True)
+
     assert err.value.translation_key == "not_loaded"
 
 
@@ -152,10 +239,10 @@ async def test_service_rejects_unexpected_fields(
     assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
 
 
-async def test_resume_service_at_datetime_keeps_stored_snapshot(
+async def test_resume_service_at_datetime_clears_stored_snapshot(
     hass: HomeAssistant,
 ) -> None:
-    """An explicit datetime is resumed instead of the snapshot, which is kept."""
+    """An explicit datetime is resumed instead of the snapshot, which is cleared."""
     entity_id = "light.test"
     stored_at = dt_util.utcnow()
     resume_at = stored_at - timedelta(hours=1)
@@ -175,8 +262,8 @@ async def test_resume_service_at_datetime_keeps_stored_snapshot(
 
     history.assert_awaited_once_with(hass, entity_id, resume_at)
     assert len(calls) == 1
-    assert hass.data[DOMAIN]["pressed_at"] == stored_at
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
+    assert hass.data[DOMAIN]["pressed_at"] is None
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
 
 
 async def test_resume_service_at_datetime_without_stored_snapshot(
@@ -233,10 +320,10 @@ async def test_resume_service_naive_datetime_uses_local_time_zone(
     history.assert_awaited_once_with(hass, entity_id, expected)
 
 
-async def test_resume_service_at_datetime_with_no_entities_keeps_snapshot(
+async def test_resume_service_at_datetime_with_no_entities_clears_snapshot(
     hass: HomeAssistant,
 ) -> None:
-    """Failing an explicit-datetime resume does not discard the stored snapshot."""
+    """An explicit-datetime resume with nothing to resume errors and clears."""
     stored_at = dt_util.utcnow()
     hass.data[DOMAIN] = {
         CONF_ENTITIES: [],
@@ -251,8 +338,38 @@ async def test_resume_service_at_datetime_with_no_entities_keeps_snapshot(
         blocking=True,
     )
 
-    assert hass.data[DOMAIN]["pressed_at"] == stored_at
+    assert hass.data[DOMAIN]["pressed_at"] is None
     assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
+
+
+async def test_resume_service_at_datetime_error_logs_and_clears_snapshot(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A failed explicit-datetime resume errors, clears, and logs the discarded time."""
+    entity_id = "light.test"
+    stored_at = dt_util.utcnow()
+    resume_at = stored_at - timedelta(hours=1)
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": stored_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    # light.turn_off is not registered, so restoring the light raises.
+    hass.states.async_set(entity_id, "on")
+
+    with (
+        _patch_history(State(entity_id, "off")),
+        caplog.at_level(logging.WARNING),
+    ):
+        await hass.services.async_call(
+            DOMAIN, SERVICE_RESUME, {ATTR_DATETIME: resume_at}, blocking=True
+        )
+
+    assert hass.data[DOMAIN]["pressed_at"] is None
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
+    assert f"Failed to resume {entity_id}" in caplog.text
+    assert f"discarding the snapshot stored at {stored_at}" in caplog.text
 
 
 async def test_resume_service_future_datetime_raises(hass: HomeAssistant) -> None:
@@ -278,3 +395,157 @@ async def test_resume_service_future_datetime_raises(hass: HomeAssistant) -> Non
     assert err.value.translation_key == "datetime_in_future"
     history.assert_not_awaited()
     assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+
+
+async def test_resume_service_parents_restores_to_the_call(hass: HomeAssistant) -> None:
+    """Each restore gets its own context, parented to the action call's context."""
+    entities = ["light.one", "light.two"]
+    user_id = "resume-state-user-id"
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: entities,
+        "pressed_at": dt_util.utcnow(),
+        "status": ResumeStatus.STORED.value,
+        "user_id": user_id,
+    }
+
+    for entity_id in entities:
+        hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    caller = Context()
+
+    with _patch_history_off():
+        await hass.services.async_call(
+            DOMAIN, SERVICE_RESUME, blocking=True, context=caller
+        )
+
+    assert len(calls) == 2
+    # Still attributed to the integration user, with independent contexts that
+    # the logbook can trace back to whatever called the action.
+    assert {call.context.user_id for call in calls} == {user_id}
+    assert {call.context.parent_id for call in calls} == {caller.id}
+    assert len({call.context.id for call in calls} | {caller.id}) == 3
+
+
+@pytest.mark.parametrize("service", [SERVICE_STORE, SERVICE_RESUME])
+async def test_service_rejected_while_resuming(
+    hass: HomeAssistant, service: str
+) -> None:
+    """Store and resume are rejected while a resume is in progress."""
+    stored_at = dt_util.utcnow() - timedelta(hours=1)
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: ["light.test"],
+        "pressed_at": stored_at,
+        "status": ResumeStatus.RESUMING.value,
+        # A resume is running while its task is pending.
+        "resume_task": hass.loop.create_future(),
+    }
+
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(DOMAIN, service, blocking=True)
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "resume_in_progress"
+    assert hass.data[DOMAIN]["pressed_at"] == stored_at
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.RESUMING.value
+
+
+async def test_clear_aborts_a_stuck_resume(hass: HomeAssistant) -> None:
+    """Clear aborts a resume that won't progress, and unblocks the snapshot."""
+    _seed_two_lights_to_resume(hass)
+    turn_off = _StuckTurnOff(hass)
+
+    with _patch_history_off():
+        resume = hass.async_create_task(
+            hass.services.async_call(DOMAIN, SERVICE_RESUME, blocking=True)
+        )
+        await turn_off.restoring.wait()
+        assert hass.data[DOMAIN]["status"] == ResumeStatus.RESUMING.value
+
+        await hass.services.async_call(DOMAIN, SERVICE_CLEAR, blocking=True)
+        assert hass.data[DOMAIN]["pressed_at"] is None
+        assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+
+        # Nothing is resuming any more, so a new snapshot can be stored, and
+        # the aborted resume must not wipe it as it unwinds.
+        await hass.services.async_call(DOMAIN, SERVICE_STORE, blocking=True)
+        # The resume action returns normally once aborted.
+        await resume
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+    # light.one hung and light.two was never restored.
+    assert [call.data["entity_id"] for call in turn_off.calls] == ["light.one"]
+    assert hass.data[DOMAIN]["pressed_at"] is not None
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
+    assert "resume_task" not in hass.data[DOMAIN]
+
+
+async def test_stopping_the_caller_stops_the_resume(hass: HomeAssistant) -> None:
+    """Stopping the caller (e.g. a restarted automation) stops its resume too."""
+    _seed_two_lights_to_resume(hass)
+    turn_off = _StuckTurnOff(hass)
+
+    with _patch_history_off():
+        caller = hass.async_create_task(
+            hass.services.async_call(DOMAIN, SERVICE_RESUME, blocking=True)
+        )
+        await turn_off.restoring.wait()
+        caller.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await caller
+
+        # Settled straight away, so the caller's next run isn't locked out.
+        assert hass.data[DOMAIN]["pressed_at"] is None
+        assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
+        assert "resume_task" not in hass.data[DOMAIN]
+        await hass.services.async_call(DOMAIN, SERVICE_STORE, blocking=True)
+
+        turn_off.release.set()
+        await hass.async_block_till_done(wait_background_tasks=True)
+
+    # light.two was never restored, and the stopped resume left the new
+    # snapshot alone as it unwound.
+    assert [call.data["entity_id"] for call in turn_off.calls] == ["light.one"]
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
+
+
+async def test_resume_settles_as_errored_when_cancelled_unexpectedly(
+    hass: HomeAssistant,
+) -> None:
+    """A cancellation other than Clear errors the resume instead of locking it."""
+    _seed_two_lights_to_resume(hass)
+
+    with patch(
+        "custom_components.resume_state.snapshot._async_historical_state",
+        AsyncMock(side_effect=asyncio.CancelledError),
+    ):
+        await hass.services.async_call(DOMAIN, SERVICE_RESUME, blocking=True)
+
+    assert hass.data[DOMAIN]["pressed_at"] is None
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
+    assert "resume_task" not in hass.data[DOMAIN]
+
+    # The lock was released, so the snapshot can be stored again.
+    await hass.services.async_call(DOMAIN, SERVICE_STORE, blocking=True)
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.STORED.value
+
+
+async def test_resume_with_no_entities_logs_the_discarded_snapshot(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An explicit resume with nothing to resume logs the snapshot it gives up."""
+    stored_at = dt_util.utcnow()
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [],
+        "pressed_at": stored_at,
+        "status": ResumeStatus.STORED.value,
+    }
+
+    with caplog.at_level(logging.WARNING):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_RESUME,
+            {ATTR_DATETIME: stored_at - timedelta(hours=1)},
+            blocking=True,
+        )
+
+    assert f"discarding the snapshot stored at {stored_at}" in caplog.text

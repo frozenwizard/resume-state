@@ -81,13 +81,13 @@
       "fields": {
         "datetime": {
           "name": "Date and time",
-          "description": "Resume to the state at this moment instead of the stored snapshot. The stored snapshot is kept."
+          "description": "Resume to the state at this moment instead of the stored snapshot. Like any resume, it clears the stored snapshot afterwards."
         }
       }
     },
     "clear": {
       "name": "Clear Home State",
-      "description": "Discards the stored snapshot."
+      "description": "Discards the stored snapshot. A resume in progress is aborted."
     }
   },
   "exceptions": {
@@ -96,6 +96,9 @@
     },
     "datetime_in_future": {
       "message": "The date and time to resume to must be in the past."
+    },
+    "resume_in_progress": {
+      "message": "A resume is in progress. Wait for it to finish, or clear the snapshot to abort it."
     }
   }
 }

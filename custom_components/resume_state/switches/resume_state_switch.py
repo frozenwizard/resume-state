@@ -6,11 +6,18 @@ import logging
 from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_connect,
+    async_dispatcher_send,
+)
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from custom_components.resume_state.const import DOMAIN, SIGNAL_UPDATE_RESUME_STATE
 from custom_components.resume_state.sensor import ResumeStatus
+from custom_components.resume_state.snapshot import (
+    async_ensure_not_resuming,
+    async_is_resuming,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +37,14 @@ class ResumeStateSwitch(SwitchEntity, RestoreEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
+        # A resume starting or ending changes availability, so re-render.
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_UPDATE_RESUME_STATE,
+                self.async_write_ha_state,
+            )
+        )
         last_state = await self.async_get_last_state()
         if last_state is not None:
             self._attr_is_on = last_state.state == "on"
@@ -38,6 +53,13 @@ class ResumeStateSwitch(SwitchEntity, RestoreEntity):
 
         if not self._attr_is_on:
             self.hass.data[DOMAIN]["status"] = ResumeStatus.DISABLED.value
+
+    @property
+    def available(self) -> bool:
+        """Return False while a resume runs, so it can't be toggled mid-resume."""
+        # Service calls skip unavailable entities, so a switch.turn_off aimed at
+        # every switch leaves this one alone instead of failing.
+        return not async_is_resuming(self.hass)
 
     async def async_turn_on(self, **_kwargs: Any) -> None:
         """Enable resuming state and sets status to IDLE."""
@@ -51,6 +73,9 @@ class ResumeStateSwitch(SwitchEntity, RestoreEntity):
 
     async def async_turn_off(self, **_kwargs: Any) -> None:
         """Disable resuming state and sets status to DISABLED."""
+        # Unavailable mid-resume, so this only guards direct calls; Clear is
+        # what aborts a running resume.
+        async_ensure_not_resuming(self.hass)
         _LOGGER.debug("Disabling resume state")
         self._attr_is_on = False
         self.hass.data[DOMAIN]["enabled"] = False
