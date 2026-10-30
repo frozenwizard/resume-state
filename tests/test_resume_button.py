@@ -11,7 +11,7 @@ from homeassistant.components.input_select import DOMAIN as INPUT_SELECT_DOMAIN
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
-from homeassistant.core import HomeAssistant, State
+from homeassistant.core import Context, HomeAssistant, State
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_mock_service
 
@@ -1302,3 +1302,41 @@ async def test_resume_uses_a_fresh_context_per_entity(
     # Same integration user, but an independent context per entity.
     assert {call.context.user_id for call in calls} == {user_id}
     assert calls[0].context.id != calls[1].context.id
+
+
+async def test_resume_parents_restores_to_the_press(
+    hass: HomeAssistant, resume_button: ResumeStateButton
+) -> None:
+    """Each restore's context is parented to the button press's context."""
+    entity_id = "light.test"
+    resume_at = dt_util.utcnow()
+
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: [entity_id],
+        "pressed_at": resume_at,
+        "status": ResumeStatus.STORED.value,
+        "user_id": "resume-state-user-id",
+    }
+
+    hass.states.async_set(entity_id, "on")
+    calls = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+    historical_states = {entity_id: [State(entity_id, "off")]}
+    # HA sets the calling context on the entity before running button.press.
+    press_context = Context()
+    resume_button.async_set_context(press_context)
+
+    with (
+        patch(
+            "custom_components.resume_state.snapshot.get_instance",
+            return_value=_mock_recorder(historical_states),
+        ),
+        patch(
+            "custom_components.resume_state.snapshot.state_changes_during_period",
+            return_value=historical_states,
+        ),
+    ):
+        await resume_button.async_press()
+
+    assert len(calls) == 1
+    assert calls[0].context.parent_id == press_context.id
+    assert calls[0].context.id != press_context.id

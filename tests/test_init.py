@@ -90,3 +90,20 @@ async def test_async_unload_entry_failure_keeps_state(hass: HomeAssistant) -> No
         assert await async_unload_entry(hass, entry) is False
 
     assert DOMAIN in hass.data
+
+
+async def test_async_unload_entry_aborts_a_running_resume(hass: HomeAssistant) -> None:
+    """Test unloading a config entry cancels a resume still in progress."""
+    entry = _mock_entry()
+    entry.add_to_hass(hass)
+    resume_task = hass.loop.create_future()
+    hass.data[DOMAIN] = {
+        "status": ResumeStatus.RESUMING.value,
+        "resume_task": resume_task,
+    }
+
+    with patch.object(hass.config_entries, "async_unload_platforms", return_value=True):
+        assert await async_unload_entry(hass, entry) is True
+
+    assert resume_task.cancelled()
+    assert DOMAIN not in hass.data
