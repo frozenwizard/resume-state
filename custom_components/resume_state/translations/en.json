@@ -99,6 +99,18 @@
     },
     "resume_in_progress": {
       "message": "A resume is in progress. Wait for it to finish, or clear the snapshot to abort it."
+    },
+    "nothing_to_resume": {
+      "message": "Nothing to resume: no snapshot is stored and no date and time was given."
+    },
+    "no_entities": {
+      "message": "None of the configured entities can be resumed."
+    },
+    "no_history": {
+      "message": "No configured entity has recorded history at {resume_at}. It may be older than the recorder keeps."
+    },
+    "resume_failed": {
+      "message": "Some entities could not be resumed: {entities}. Check the log for details."
     }
   }
 }

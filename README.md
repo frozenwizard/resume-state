@@ -1,6 +1,6 @@
 # Resume State
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 
 A Home Assistant integration that snapshots the state of your chosen entities at a moment in time and
 restores them to that snapshot later.
@@ -36,6 +36,11 @@ Each button has a matching action, so automations and scripts can drive the snap
 - `resume_state.resume` — same as **Resume**. The action finishes once every entity has been restored.
 - `resume_state.clear` — same as **Clear**.
 
+When a resume fails, the status shows **Errored** and the action (or button press) raises an error saying why:
+nothing is stored, none of the configured entities can be resumed, no entity has recorded history at that time, or
+some entities failed to restore. Automations can handle this with `continue_on_error`. Turning off **Enabled** or
+aborting with **Clear** is not an error.
+
 `resume_state.resume` also takes an optional `datetime` to restore to that moment instead of the stored
 snapshot. Like any resume, it clears the stored snapshot afterwards, whether or not it succeeds. A date and
 time without a time zone is read in Home Assistant's time zone. It must be in the past and within your
@@ -59,10 +64,13 @@ data:
 
 ### HACS (recommended)
 
-1. In HACS, open the overflow menu (⋮) and choose **Custom repositories**.
-2. Add `https://github.com/frozenwizard/resume-state` with type **Integration**.
-3. Search for **Resume State** in HACS and install it.
-4. Restart Home Assistant.
+Resume State is in the HACS default store.
+
+[![Open your Home Assistant instance and open the Resume State repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=frozenwizard&repository=resume-state&category=integration)
+
+1. In HACS, search for **Resume State** and open it (or use the button above).
+2. Select **Download**.
+3. Restart Home Assistant.
 
 ### Manual
 

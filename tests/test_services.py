@@ -11,7 +11,7 @@ import voluptuous as vol
 from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import Context, HomeAssistant, ServiceCall, State
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -331,12 +331,14 @@ async def test_resume_service_at_datetime_with_no_entities_clears_snapshot(
         "status": ResumeStatus.STORED.value,
     }
 
-    await hass.services.async_call(
-        DOMAIN,
-        SERVICE_RESUME,
-        {ATTR_DATETIME: stored_at - timedelta(hours=1)},
-        blocking=True,
-    )
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_RESUME,
+            {ATTR_DATETIME: stored_at - timedelta(hours=1)},
+            blocking=True,
+        )
+    assert err.value.translation_key == "no_entities"
 
     assert hass.data[DOMAIN]["pressed_at"] is None
     assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
@@ -362,9 +364,11 @@ async def test_resume_service_at_datetime_error_logs_and_clears_snapshot(
         _patch_history(State(entity_id, "off")),
         caplog.at_level(logging.WARNING),
     ):
-        await hass.services.async_call(
-            DOMAIN, SERVICE_RESUME, {ATTR_DATETIME: resume_at}, blocking=True
-        )
+        with pytest.raises(HomeAssistantError) as err:
+            await hass.services.async_call(
+                DOMAIN, SERVICE_RESUME, {ATTR_DATETIME: resume_at}, blocking=True
+            )
+        assert err.value.translation_key == "resume_failed"
 
     assert hass.data[DOMAIN]["pressed_at"] is None
     assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
@@ -541,11 +545,42 @@ async def test_resume_with_no_entities_logs_the_discarded_snapshot(
     }
 
     with caplog.at_level(logging.WARNING):
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_RESUME,
-            {ATTR_DATETIME: stored_at - timedelta(hours=1)},
-            blocking=True,
-        )
+        with pytest.raises(ServiceValidationError) as err:
+            await hass.services.async_call(
+                DOMAIN,
+                SERVICE_RESUME,
+                {ATTR_DATETIME: stored_at - timedelta(hours=1)},
+                blocking=True,
+            )
+        assert err.value.translation_key == "no_entities"
 
     assert f"discarding the snapshot stored at {stored_at}" in caplog.text
+
+
+async def test_resume_service_skips_entities_without_history(
+    hass: HomeAssistant,
+) -> None:
+    """An entity without history is skipped while others with history resume."""
+    hass.data[DOMAIN] = {
+        CONF_ENTITIES: ["light.old", "light.new"],
+        "pressed_at": dt_util.utcnow(),
+        "status": ResumeStatus.STORED.value,
+    }
+
+    hass.states.async_set("light.old", "on")
+    hass.states.async_set("light.new", "on")
+    calls = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
+
+    # light.new was added after the snapshot, so it has no history then.
+    with patch(
+        "custom_components.resume_state.snapshot._async_historical_state",
+        AsyncMock(
+            side_effect=lambda _hass, entity_id, _at: (
+                State(entity_id, "off") if entity_id == "light.old" else None
+            )
+        ),
+    ):
+        await hass.services.async_call(DOMAIN, SERVICE_RESUME, blocking=True)
+
+    assert [call.data["entity_id"] for call in calls] == ["light.old"]
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
