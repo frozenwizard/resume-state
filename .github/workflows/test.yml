@@ -1,6 +1,8 @@
 name: Test
 
 on:
+  # Lets release.yml run these checks on a tag before releasing it.
+  workflow_call:
   push:
     branches:
       - "main"
@@ -17,10 +19,10 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
           cache: "pip"
@@ -32,6 +34,8 @@ jobs:
 
       - name: Run tests with coverage
         run: |
+          # Without this the step reports tee's exit status, so failing tests pass.
+          set -o pipefail
           python3 -m pytest tests/ --cov=custom_components.resume_state --cov-report=term-missing | tee coverage_report.txt
 
       - name: Add Coverage Report to Summary
