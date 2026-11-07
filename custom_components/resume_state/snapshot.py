@@ -11,7 +11,7 @@ import homeassistant.util.dt as dt_util
 from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.history import state_changes_during_period
 from homeassistant.core import Context, State, callback, split_entity_id
-from homeassistant.exceptions import ServiceValidationError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from custom_components.resume_state.const import (
@@ -134,7 +134,9 @@ async def async_resume_snapshot(
     if resume_at is None:
         _LOGGER.warning("Nothing to resume: no state has been stored")
         _async_set_status(hass, ResumeStatus.ERRORED)
-        return
+        raise ServiceValidationError(
+            translation_domain=DOMAIN, translation_key="nothing_to_resume"
+        )
 
     filtered_entities_to_resume = _filtered_entities(hass)
     if not filtered_entities_to_resume:
@@ -142,7 +144,9 @@ async def async_resume_snapshot(
         _warn_if_discarding(resume_at, discarding)
         hass.data[DOMAIN]["pressed_at"] = None
         _async_set_status(hass, ResumeStatus.ERRORED)
-        return
+        raise ServiceValidationError(
+            translation_domain=DOMAIN, translation_key="no_entities"
+        )
 
     # The restores run as their own task so Clear can abort them without
     # cancelling the caller. As a background task, shutdown cancels it rather
@@ -171,7 +175,8 @@ async def async_resume_snapshot(
         _async_settle(hass, restore, resume_at, discarding, had_error=True)
         raise
     if not restore.cancelled():
-        # Surface anything unexpected; an abort by Clear is not an error.
+        # Surface failed restores (and anything unexpected) to the caller; an
+        # abort by Clear is not an error.
         restore.result()
 
 
@@ -189,12 +194,12 @@ async def _async_restore(
     ``discarding`` is the stored snapshot given up for an explicit
     ``resume_at``, if any.
     """
-    # Anything that ends the restores early, short of an abort, is an error.
+    # Anything that ends the restores early or raises, short of an abort, is
+    # an error.
     had_error = True
     try:
-        had_error = await _async_restore_entities(
-            hass, entity_ids, resume_at, parent_context
-        )
+        await _async_restore_entities(hass, entity_ids, resume_at, parent_context)
+        had_error = False
     finally:
         _async_settle(
             hass, asyncio.current_task(), resume_at, discarding, had_error=had_error
@@ -228,8 +233,8 @@ async def _async_restore_entities(
     entity_ids: list[str],
     resume_at: datetime,
     parent_context: Context | None,
-) -> bool:
-    """Restore each entity to its state at resume_at; return whether any failed."""
+) -> None:
+    """Restore each entity to its state at resume_at, raising if any failed."""
     # Milliseconds to wait after resuming each entity.
     throttle_ms: int = hass.data[DOMAIN].get(CONF_THROTTLE, CONF_THROTTLE_DEFAULT)
 
@@ -238,7 +243,8 @@ async def _async_restore_entities(
 
     # Isolate failures per entity: one entity failing to restore should not
     # abort the others.
-    had_error = False
+    failed: list[str] = []
+    had_history = False
     for entity_id in entity_ids:
         try:
             past_state = await _async_historical_state(hass, entity_id, resume_at)
@@ -247,6 +253,7 @@ async def _async_restore_entities(
                     "Entity %s has no history at %s; skipping", entity_id, resume_at
                 )
                 continue
+            had_history = True
             resumable_entity: ResumableEntity | None = build_resumable_entity(
                 entity_id, past_state
             )
@@ -266,8 +273,27 @@ async def _async_restore_entities(
 
         except Exception:
             _LOGGER.exception("Failed to resume %s", entity_id)
-            had_error = True
-    return had_error
+            failed.append(entity_id)
+
+    if failed:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="resume_failed",
+            translation_placeholders={"entities": ", ".join(failed)},
+        )
+    # One entity without history is skipped (it may be newer than the
+    # snapshot), but none having any means the instant is outside what the
+    # recorder keeps, and nothing was restored.
+    if not had_history:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="no_history",
+            translation_placeholders={
+                "resume_at": dt_util.as_local(resume_at).isoformat(
+                    sep=" ", timespec="seconds"
+                )
+            },
+        )
 
 
 def _warn_if_discarding(resume_at: datetime, discarding: datetime | None) -> None:

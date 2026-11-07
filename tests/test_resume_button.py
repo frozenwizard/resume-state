@@ -12,6 +12,7 @@ from homeassistant.components.light import DOMAIN as LIGHT_DOMAIN
 from homeassistant.components.select import DOMAIN as SELECT_DOMAIN
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.core import Context, HomeAssistant, State
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_mock_service
 
@@ -912,7 +913,9 @@ async def test_resume_without_stored_state_errors(
     turn_on = async_mock_service(hass, LIGHT_DOMAIN, "turn_on")
     turn_off = async_mock_service(hass, LIGHT_DOMAIN, "turn_off")
 
-    await resume_button.async_press()
+    with pytest.raises(ServiceValidationError) as err:
+        await resume_button.async_press()
+    assert err.value.translation_key == "nothing_to_resume"
 
     assert not turn_on
     assert not turn_off
@@ -973,7 +976,9 @@ async def test_resume_status_sensor_updates_no_entities(
 
     assert status_sensor.native_value == ResumeStatus.STORED.value
 
-    await resume_button.async_press()
+    with pytest.raises(ServiceValidationError) as err:
+        await resume_button.async_press()
+    assert err.value.translation_key == "no_entities"
 
     assert status_sensor.native_value == ResumeStatus.ERRORED.value
     assert hass.data[DOMAIN]["pressed_at"] is None
@@ -982,7 +987,7 @@ async def test_resume_status_sensor_updates_no_entities(
 async def test_resume_no_history(
     hass: HomeAssistant, resume_button: ResumeStateButton
 ) -> None:
-    """Test when state_changes_during_period returns empty."""
+    """No entity having history at the instant is an error, not a silent no-op."""
     entity_id = "light.test"
     resume_at = dt_util.utcnow()
 
@@ -1004,9 +1009,11 @@ async def test_resume_no_history(
             return_value=historical_states,
         ),
     ):
-        await resume_button.async_press()
+        with pytest.raises(ServiceValidationError) as err:
+            await resume_button.async_press()
+        assert err.value.translation_key == "no_history"
 
-    assert hass.data[DOMAIN]["status"] == ResumeStatus.IDLE.value
+    assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
 
 
 async def test_resume_unsupported_domain(
@@ -1022,7 +1029,9 @@ async def test_resume_unsupported_domain(
         "status": ResumeStatus.STORED.value,
     }
 
-    await resume_button.async_press()
+    with pytest.raises(ServiceValidationError) as err:
+        await resume_button.async_press()
+    assert err.value.translation_key == "no_entities"
 
     assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
 
@@ -1091,7 +1100,9 @@ async def test_resume_exception_during_restore(
             return_value=mock_entity,
         ),
     ):
-        await resume_button.async_press()
+        with pytest.raises(HomeAssistantError) as err:
+            await resume_button.async_press()
+        assert err.value.translation_key == "resume_failed"
 
     assert hass.data[DOMAIN]["status"] == ResumeStatus.ERRORED.value
     assert hass.data[DOMAIN]["pressed_at"] is None
